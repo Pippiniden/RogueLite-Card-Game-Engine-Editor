@@ -1,0 +1,21 @@
+{
+  "name": "roguelite-card-game-engine-editor",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host",
+    "check": "node --experimental-strip-types --no-warnings tools/check-pack.ts",
+    "sim": "node --experimental-strip-types --no-warnings tools/simulate.ts",
+    "test": "node --experimental-strip-types --no-warnings tools/test-mechanics.ts",
+    "art": "node tools/gen-placeholder-art.mjs",
+    "docs": "node --experimental-strip-types --no-warnings tools/gen-reference.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vite": "^8.0.0"
+  },
+  "description": "RogueLite Card Game Engine & Editor"
+}

@@ -1,0 +1,15 @@
+{
+  "$comment": "UIスキンの見本（docs/asset-spec.md の規格どおり @2x で描いた9スライス）",
+  "ui.dialog": "ui/dialog.svg",
+  "ui.button": "ui/button.svg",
+  "ui.button.primary": "ui/button_primary.svg",
+  "ui.button.disabled": "ui/button_disabled.svg",
+  "ui.topbar": "ui/topbar.svg",
+  "ui.banner": "ui/banner.svg",
+  "ui.card.attack": "ui/card_attack.svg",
+  "ui.card.skill": "ui/card_skill.svg",
+  "ui.card.power": "ui/card_power.svg",
+  "ui.card.status": "ui/card_status.svg",
+  "ui.card.curse": "ui/card_curse.svg",
+  "ui.card.cost": "ui/card_cost.svg"
+}

@@ -1,0 +1,27 @@
+{
+  "maxHand": 10,
+  "map": {
+    "floors": 12, "width": 7, "paths": 6,
+    "restFloor": "last", "treasureFloor": 6,
+    "weights": { "battle": 56, "elite": 14, "rest": 14 },
+    "eliteMinFloor": 4, "restMinFloor": 4
+  },
+  "rewards": {
+    "cardChoices": 3,
+    "rarity": {
+      "normal": { "common": 63, "uncommon": 33, "rare": 4 },
+      "elite":  { "common": 45, "uncommon": 42, "rare": 13 },
+      "boss":   { "rare": 100 }
+    },
+    "gold": { "normal": [10, 20], "elite": [25, 35], "boss": [95, 105] },
+    "upgradedChance": 0.05
+  },
+  "rest": { "healPercent": 30 },
+  "formations": {
+    "1": [{ "x": 0.5, "y": 0.86 }],
+    "2": [{ "x": 0.28, "y": 0.86 }, { "x": 0.72, "y": 0.82 }],
+    "3": [{ "x": 0.17, "y": 0.88, "scale": 0.9 }, { "x": 0.5, "y": 0.8 }, { "x": 0.83, "y": 0.88, "scale": 0.9 }],
+    "4": [{ "x": 0.13, "y": 0.88, "scale": 0.8 }, { "x": 0.38, "y": 0.8, "scale": 0.85 }, { "x": 0.62, "y": 0.8, "scale": 0.85 }, { "x": 0.87, "y": 0.88, "scale": 0.8 }]
+  },
+  "sizes": { "small": 0.34, "medium": 0.5, "large": 0.64, "boss": 0.8 }
+}

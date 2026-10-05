@@ -1,0 +1,23 @@
+{
+  "id": "base",
+  "name": "基本パック",
+  "version": "0.2.0",
+  "files": {
+    "cards": "cards.json",
+    "statuses": "statuses.json",
+    "relics": "relics.json",
+    "enemies": "enemies.json",
+    "encounters": "encounters.json",
+    "characters": "characters.json",
+    "rules": "rules.json",
+    "vfx": "vfx.json",
+    "theme": "theme.json",
+    "text": "text.ja.json",
+    "audio": "audio.json"
+  },
+  "layout": "layout.qlayout",
+  "assets": "assets/manifest.json",
+  "plugins": [
+    "plugins/example-effects.js"
+  ]
+}

@@ -1,0 +1,13 @@
+[
+  { "id": "n_slimes",     "pool": "normal", "enemies": ["slime", "slime"],          "maxFloor": 4 },
+  { "id": "n_rats",       "pool": "normal", "enemies": ["horn_rat", "horn_rat"],    "maxFloor": 4 },
+  { "id": "n_spore",      "pool": "normal", "enemies": ["spore_cap"],               "maxFloor": 4 },
+  { "id": "n_cultist",    "pool": "normal", "enemies": ["ash_cultist"],             "minFloor": 2 },
+  { "id": "n_guard",      "pool": "normal", "enemies": ["stone_guard"],             "minFloor": 3 },
+  { "id": "n_bandits",    "pool": "normal", "enemies": ["bandit", "bandit"],        "minFloor": 4 },
+  { "id": "n_slime_spore","pool": "normal", "enemies": ["slime", "spore_cap", "slime"], "minFloor": 5 },
+  { "id": "n_guard_rat",  "pool": "normal", "enemies": ["horn_rat", "stone_guard"], "minFloor": 6 },
+  { "id": "e_knight",     "pool": "elite",  "enemies": ["armored_knight"] },
+  { "id": "e_witch",      "pool": "elite",  "enemies": ["slime", "hex_witch"] },
+  { "id": "b_dragon",     "pool": "boss",   "enemies": ["ash_dragon"] }
+]

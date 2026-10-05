@@ -1,0 +1,11 @@
+{
+  "enemy.hit":      [{ "fx": "flash", "ms": 90 }, { "fx": "shake", "px": 6, "ms": 220 }],
+  "enemy.hitHeavy": [{ "fx": "flash", "ms": 120 }, { "fx": "shake", "px": 3, "ms": 260 }],
+  "enemy.attack":   [{ "fx": "lunge", "scale": 1.14, "ms": 280 }],
+  "enemy.attackBig":[{ "fx": "lunge", "scale": 1.22, "ms": 380 }],
+  "enemy.buff":     [{ "fx": "glow", "color": "#f4c35a", "ms": 420 }],
+  "enemy.death":    [{ "fx": "dissolve", "ms": 650 }],
+  "player.hit":     [{ "fx": "screenShake", "px": 9, "ms": 260 }, { "fx": "vignette", "color": "rgba(190,30,30,.55)", "ms": 380 }],
+  "player.block":   [{ "fx": "vignette", "color": "rgba(90,150,230,.35)", "ms": 260 }],
+  "card.play":      [{ "fx": "fly", "ms": 240 }]
+}

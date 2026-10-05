@@ -1,0 +1,12 @@
+[
+  {"id": "old_lantern", "name": "古いランタン", "icon": "relic.lantern", "rarity": "starter", "desc": "戦闘に勝つとHPを6回復する", "triggers": [{"on": "battleEnd", "effects": [{"op": "heal", "amount": 6}]}]},
+  {"id": "anchor_stone", "name": "重しの石", "icon": "relic.stone", "rarity": "common", "desc": "戦闘開始時にブロックを10得る", "triggers": [{"on": "battleStart", "effects": [{"op": "block", "amount": 10}]}]},
+  {"id": "whetstone", "name": "砥石", "icon": "relic.whetstone", "rarity": "common", "desc": "戦闘開始時に筋力を1得る", "triggers": [{"on": "battleStart", "effects": [{"op": "applyStatus", "status": "strength", "stacks": 1}]}]},
+  {"id": "steel_ring", "name": "鋼の指輪", "icon": "relic.ring", "rarity": "common", "desc": "カードで得るブロックが1増える", "modifiers": [{"stat": "blockGained", "op": "add", "value": 1}]},
+  {"id": "brass_bell", "name": "真鍮の鈴", "icon": "relic.bell", "rarity": "common", "desc": "最初のターンの開始時にカードを2枚引く", "triggers": [{"on": "turnStart", "if": {"turn": 1}, "effects": [{"op": "draw", "count": 2}]}]},
+  {"id": "war_drum", "name": "軍鼓", "icon": "relic.drum", "rarity": "uncommon", "desc": "アタックを3回使うたびに筋力を1得る", "triggers": [{"on": "cardPlayed", "if": {"cardType": "attack", "every": 3}, "effects": [{"op": "applyStatus", "status": "strength", "stacks": 1}]}]},
+  {"id": "thorn_bracelet", "name": "茨の腕輪", "icon": "relic.thorn", "rarity": "uncommon", "desc": "戦闘開始時に棘を3得る", "triggers": [{"on": "battleStart", "effects": [{"op": "applyStatus", "status": "thorns", "stacks": 3}]}]},
+  {"id": "poison_vial", "name": "毒の小瓶", "icon": "relic.vial", "rarity": "uncommon", "desc": "戦闘開始時に敵全体に毒を4付与する", "triggers": [{"on": "battleStart", "effects": [{"op": "applyStatus", "status": "poison", "stacks": 4, "to": "allEnemies"}]}]},
+  {"id": "old_nut", "name": "古木の実", "icon": "relic.nut", "rarity": "common", "desc": "拾ったとき最大HPが7増える", "onPickup": [{"op": "gainMaxHp", "amount": 7}]},
+  {"id": "cracked_core", "name": "ひび割れた核", "icon": "relic.core", "rarity": "uncommon", "desc": "戦闘開始時に結界を1得る", "triggers": [{"on": "battleStart", "effects": [{"op": "applyStatus", "status": "artifact", "stacks": 1}]}]}
+]

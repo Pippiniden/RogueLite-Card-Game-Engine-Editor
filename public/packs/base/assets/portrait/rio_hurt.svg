@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256"><defs><radialGradient id="glow" cx="30%" cy="85%" r="75%"><stop offset="0" stop-color="#f4a948" stop-opacity=".75"/><stop offset=".55" stop-color="#5b3b2a" stop-opacity=".35"/><stop offset="1" stop-color="#181a22" stop-opacity="0"/></radialGradient></defs>
+    <rect width="256" height="256" fill="#1c2029"/><rect width="256" height="256" fill="url(#glow)"/>
+    <path d="M70 70 q58 -60 118 0 q22 40 12 96 l-20 30 h-104 l-18 -30 q-10 -56 12 -96z" fill="#22404a"/>
+    <path d="M40 256 q8 -62 88 -68 q80 6 88 68z" fill="#2c3445"/>
+    <path d="M60 256 q10 -40 68 -46 q58 6 68 46z" fill="#384257"/>
+    <path d="M108 172 h40 v30 q-20 14 -40 0z" fill="#d9ae8e"/>
+    <path d="M78 206 q50 26 100 0 l8 18 q-58 30 -116 0z" fill="#b8452f"/>
+    <path d="M150 214 l14 40 l-18 0 l-6 -36z" fill="#9a3626"/>
+    <ellipse cx="128" cy="132" rx="56" ry="62" fill="#f2d2b6"/>
+    <path d="M74 140 q4 32 54 52 q50 -20 54 -52 q-2 46 -54 60 q-52 -14 -54 -60z" fill="#d9ae8e" opacity=".5"/>
+    
+    
+      <path d="M88 124 l26 8 l-26 8" stroke="#2b1d16" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M168 124 l-26 8 l26 8" stroke="#2b1d16" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M88 106 l28 10" stroke="#22404a" stroke-width="4.5" fill="none" stroke-linecap="round"/><path d="M168 106 l-28 10" stroke="#22404a" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    <path d="M126 148 q2 6 -2 9" stroke="#d9ae8e" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M114 168 q14 -8 28 0 q-14 10 -28 0z" fill="#7a2a22"/><path d="M118 167 h20" stroke="#fff" stroke-width="2.5"/>
+    <path d="M68 118 q4 -64 60 -66 q58 2 62 66 q-14 -22 -26 -26 q-2 16 -14 22 q4 -14 -2 -26 q-12 18 -36 24 q10 -12 10 -26 q-14 20 -40 30 q6 -10 6 -20 q-12 10 -20 22z" fill="#22404a"/>
+    <path d="M96 62 q22 -10 52 -4 q-30 0 -52 18z" fill="#33606b" opacity=".9"/>
+    <path d="M182 92 q8 12 0 18 q-8 -6 0 -18z" fill="#9fd3f0" opacity=".9"/>
+  </svg>

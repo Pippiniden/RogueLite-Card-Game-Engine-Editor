@@ -1,0 +1,40 @@
+{
+  "fonts": {
+    "display": "'Shippori Mincho B1', 'Hiragino Mincho ProN', 'Yu Mincho', serif",
+    "body": "'Zen Kaku Gothic New', 'Hiragino Sans', 'Noto Sans JP', system-ui, sans-serif",
+    "googleFonts": "https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap"
+  },
+  "colors": {
+    "bg": "#14161d",
+    "bgDeep": "#0b0c11",
+    "stone": "#262a35",
+    "line": "#3a3f4d",
+    "ink": "#ece4d2",
+    "muted": "#9a937f",
+    "parchment": "#e9dcbf",
+    "parchmentInk": "#2b2418",
+    "ember": "#e8913a",
+    "emberDeep": "#a8541d",
+    "hp": "#c8443b",
+    "block": "#5d8fd6",
+    "energy": "#f0b23f",
+    "good": "#7cc47f",
+    "bad": "#e0685c"
+  },
+  "cardTypeColors": {
+    "attack": "#9c3b2e",
+    "skill": "#2f5f86",
+    "power": "#7a5a1e",
+    "status": "#4a4a50",
+    "curse": "#4b2a52"
+  },
+  "rarityColors": {
+    "starter": "#8d8676",
+    "common": "#a7a08e",
+    "uncommon": "#5aa0c8",
+    "rare": "#e2b24c",
+    "special": "#8d8676"
+  },
+  "skins": {},
+  "backgrounds": {}
+}

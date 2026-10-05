@@ -1,0 +1,38 @@
+[
+  {
+    "id": "rio",
+    "name": "リオ",
+    "title": "灯火の剣士",
+    "intro": "古いランタンを腰に下げた、地下回廊の案内人。",
+    "hp": 72,
+    "gold": 99,
+    "energy": 3,
+    "draw": 5,
+    "deck": [
+      "strike",
+      "strike",
+      "strike",
+      "strike",
+      "strike",
+      "defend",
+      "defend",
+      "defend",
+      "defend",
+      "shield_bash"
+    ],
+    "relics": [
+      "old_lantern"
+    ],
+    "portrait": {
+      "normal": "portrait.rio.normal",
+      "hurt": "portrait.rio.hurt",
+      "pinch": "portrait.rio.pinch",
+      "happy": "portrait.rio.happy"
+    },
+    "cardPools": [
+      "hero",
+      "colorless"
+    ],
+    "color": "#e8913a"
+  }
+]

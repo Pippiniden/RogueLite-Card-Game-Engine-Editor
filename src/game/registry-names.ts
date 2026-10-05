@@ -1,0 +1,106 @@
+/* Names the layout file may use. widgets.ts / actions.ts are typed against these lists,
+   `npm run check` warns when layout.qlayout uses a name that is not here, and the editor offers them.
+   Plugins can add more at run time (registerWidget / registerAction). */
+
+export const SCREEN_IDS = ['TITLE', 'CHARSELECT', 'MAP', 'BATTLE', 'REWARD', 'REST', 'RESULT'] as const;
+export type ScreenId = typeof SCREEN_IDS[number];
+
+export const WIDGET_INFO = {
+  'title.bg': '背景（theme.backgrounds の画面ごとの絵）',
+  'title.name': 'ゲームのタイトル',
+  'title.sub': 'サブタイトル',
+  'title.portrait': '最初の主人公の顔',
+  'title.intro': '主人公の紹介',
+  'title.start': '「はじめから」ボタンの文字',
+  'sound.toggle': '音のオン・オフ',
+  'charselect.title': '主人公選択の見出し',
+  'charselect.art': '選んでいる主人公の絵',
+  'charselect.name': '名前と肩書',
+  'charselect.info': '紹介と初期ステータス',
+  'charselect.list': '主人公の一覧（タップで選ぶ）',
+  'player.face': '主人公の顔（表情が変わる）',
+  'player.name': '主人公の名前',
+  'player.hp': 'HPゲージ',
+  'player.hpBlock': 'HPとブロックのゲージ（戦闘）',
+  'player.statuses': '主人公の状態アイコン',
+  'run.floor': '階層',
+  'run.gold': '所持金',
+  'run.relics': 'レリックの一覧',
+  'deck.button': 'デッキの枚数ボタン',
+  'deck.title': 'デッキ一覧の見出し',
+  'deck.cards': 'デッキのカード一覧',
+  'map': 'マップ（スクロール）',
+  'enemies': '敵の配置領域',
+  'hand': '手札',
+  'battle.energy': 'エネルギー',
+  'battle.endTurn': 'ターン終了ボタン',
+  'battle.banner': 'ターン表示などの帯',
+  'pile.draw': '山札ボタン',
+  'pile.discard': '捨て札ボタン',
+  'pile.exhaust': '廃棄ボタン',
+  'pile.title': '山札・捨て札一覧の見出し',
+  'pile.cards': '山札・捨て札のカード一覧',
+  'choice.prompt': 'カード選択の案内文',
+  'choice.cards': '選べるカード',
+  'choice.confirm': 'カード選択の決定ボタン',
+  'info.body': '長押しで出る詳細',
+  'reward.title': '報酬の見出し',
+  'reward.items': 'ゴールド・レリック',
+  'reward.cardTitle': 'カード選択の見出し',
+  'reward.cards': 'カードの候補',
+  'reward.next': '次へボタンの文字',
+  'rest.art': '焚き火の絵',
+  'rest.title': '焚き火の見出し',
+  'rest.heal': '休むボタン',
+  'rest.upgrade': '鍛えるボタン',
+  'upgrade.title': '強化するカード一覧の見出し',
+  'upgrade.cards': '強化できるカード',
+  'result.portrait': '結果画面の顔',
+  'result.title': '勝敗',
+  'result.stats': '記録',
+} as const;
+export type WidgetName = keyof typeof WIDGET_INFO;
+export const WIDGET_NAMES = Object.keys(WIDGET_INFO) as WidgetName[];
+
+export const ACTION_INFO = {
+  newRun: '新しい冒険（主人公が2人以上なら選択画面へ）',
+  startRun: '選んだ主人公で冒険を始める',
+  continueRun: '保存した冒険の続き',
+  abandonRun: '保存を消す',
+  toTitle: 'タイトルへ',
+  open: '重ね表示を開く（open → ID）',
+  close: '重ね表示を閉じる（close → ID）',
+  showPile: '山を表示（showPile(draw|discard|exhaust)）',
+  endTurn: 'ターン終了',
+  confirmChoice: 'カード選択を決定',
+  leaveNode: 'マップへ戻る',
+  restHeal: '焚き火で休む',
+  toggleSound: '音のオン・オフ',
+} as const;
+export type ActionName = keyof typeof ACTION_INFO;
+export const ACTION_NAMES = Object.keys(ACTION_INFO) as ActionName[];
+
+/** UI parts that can be drawn from a 9-slice image (theme.json → skins); see docs/asset-spec.md */
+export const SKIN_PARTS = {
+  'button': 'ボタン',
+  'button.primary': '主要ボタン（はじめから・ターン終了）',
+  'button.disabled': '押せないボタン',
+  'dialog': '重ね表示の枠',
+  'panel': '枠（frame 要素に skin="panel"）',
+  'topbar': '上部バー',
+  'banner': 'ターン表示の帯',
+  'reward.item': '報酬の項目',
+  'map.node': 'マップのノード',
+  'map.node.boss': 'ボスのノード',
+  'gauge.track': 'ゲージの枠',
+  'gauge.fill': 'ゲージの中身',
+  'energy': 'エネルギーの玉',
+  'card.frame.attack': 'カード枠（アタック）',
+  'card.frame.skill': 'カード枠（スキル）',
+  'card.frame.power': 'カード枠（パワー）',
+  'card.frame.status': 'カード枠（状態異常）',
+  'card.frame.curse': 'カード枠（呪い）',
+  'card.cost': 'コストの宝石',
+  'card.panel': 'カードの文章欄',
+} as const;
+export type SkinPart = keyof typeof SKIN_PARTS;

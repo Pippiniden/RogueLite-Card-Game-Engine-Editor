@@ -1,0 +1,139 @@
+{
+  "skins": {
+    "dialog": {
+      "image": "ui.dialog",
+      "slice": [
+        32,
+        32,
+        32,
+        32
+      ],
+      "scale": 2,
+      "fill": true
+    },
+    "button": {
+      "image": "ui.button",
+      "slice": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "scale": 2,
+      "fill": true
+    },
+    "button.primary": {
+      "image": "ui.button.primary",
+      "slice": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "scale": 2,
+      "fill": true,
+      "css": {
+        "color": "#fff4e2"
+      }
+    },
+    "button.disabled": {
+      "image": "ui.button.disabled",
+      "slice": [
+        24,
+        24,
+        24,
+        24
+      ],
+      "scale": 2,
+      "fill": true
+    },
+    "topbar": {
+      "image": "ui.topbar",
+      "slice": [
+        0,
+        0,
+        8,
+        0
+      ],
+      "scale": 2,
+      "fill": true
+    },
+    "banner": {
+      "image": "ui.banner",
+      "slice": [
+        8,
+        40,
+        8,
+        40
+      ],
+      "scale": 2,
+      "fill": true
+    },
+    "card.frame.attack": {
+      "image": "ui.card.attack",
+      "slice": [
+        28,
+        28,
+        28,
+        28
+      ],
+      "scale": 2,
+      "fill": true
+    },
+    "card.frame.skill": {
+      "image": "ui.card.skill",
+      "slice": [
+        28,
+        28,
+        28,
+        28
+      ],
+      "scale": 2,
+      "fill": true
+    },
+    "card.frame.power": {
+      "image": "ui.card.power",
+      "slice": [
+        28,
+        28,
+        28,
+        28
+      ],
+      "scale": 2,
+      "fill": true
+    },
+    "card.frame.status": {
+      "image": "ui.card.status",
+      "slice": [
+        28,
+        28,
+        28,
+        28
+      ],
+      "scale": 2,
+      "fill": true
+    },
+    "card.frame.curse": {
+      "image": "ui.card.curse",
+      "slice": [
+        28,
+        28,
+        28,
+        28
+      ],
+      "scale": 2,
+      "fill": true
+    },
+    "card.cost": {
+      "image": "ui.card.cost",
+      "slice": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "scale": 2,
+      "fill": true
+    }
+  }
+}

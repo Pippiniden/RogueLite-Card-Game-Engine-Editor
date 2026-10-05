@@ -1,0 +1,48 @@
+/* Card faces, gauges and status icons — shared by the game and the editor's previews. */
+.gauge { display: flex; align-items: center; gap: 6px; position: relative; }
+.gauge-bar { flex: 1; height: 100%; min-height: 10px; border-radius: 6px; background: #2a1514; box-shadow: inset 0 0 0 1px #000; overflow: hidden; position: relative; }
+.gauge-bar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(#e0574c, var(--c-hp) 60%, #8e2a24); transition: width .35s ease-out; }
+.gauge-bar.has-block { box-shadow: inset 0 0 0 2px var(--c-block); }
+.gauge-num { position: absolute; left: 0; right: 0; text-align: center; font-size: 12px; font-weight: 700; text-shadow: 0 1px 2px #000, 0 0 3px #000; font-variant-numeric: tabular-nums; pointer-events: none; }
+.blk-badge { position: absolute; left: -10px; top: 50%; translate: 0 -50%; min-width: 24px; height: 24px; padding: 0 4px; display: grid; place-items: center; font-size: 12px; color: #fff; background: var(--c-block); border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%; box-shadow: 0 0 0 2px #10131a; }
+
+.st { position: relative; width: 24px; height: 24px; flex: none; }
+.st img { width: 100%; height: 100%; }
+.st b { position: absolute; right: -3px; bottom: -4px; font-size: 10px; line-height: 1; padding: 1px 2px; border-radius: 4px; background: #0b0c11; color: var(--c-ink); font-variant-numeric: tabular-nums; }
+.st-debuff b { color: #f2a59c; }
+
+
+/* ===== card face ===== */
+.card { position: relative; container-type: size; aspect-ratio: 96 / 134; border-radius: 9px; background: var(--type-attack); padding: 4%; box-shadow: 0 0 0 1px #000, 0 6px 14px rgba(0,0,0,.5); color: var(--c-parchmentInk); }
+.card.ct-skill { background: var(--type-skill); }
+.card.ct-power { background: var(--type-power); }
+.card.ct-status, .card.ct-curse { background: var(--type-status); }
+.card-in { position: absolute; inset: 4%; border-radius: 6px; background: var(--c-parchment); overflow: hidden; display: flex; flex-direction: column; }
+.card-name { order: 0; height: 17cqh; display: grid; place-items: center; padding: 0 6cqw 0 18cqw; font-family: var(--f-display); font-weight: 800; font-size: 13cqw; line-height: 1; white-space: nowrap; background: linear-gradient(#f3ead6, #ddcca8); border-bottom: 2px solid var(--rar-common); }
+.card-name span { overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.name-l .card-name { font-size: 11cqw; }
+.name-xl .card-name { font-size: 9.5cqw; }
+.cr-uncommon .card-name { border-bottom-color: var(--rar-uncommon); }
+.cr-rare .card-name { border-bottom-color: var(--rar-rare); background: linear-gradient(#fbe9b9, #e2c27a); }
+.card.up .card-name { color: #2f6b2a; }
+.card-art { order: 1; aspect-ratio: 16 / 9; flex: none; background: #2a2622; overflow: hidden; }
+.card-art img { width: 100%; height: 100%; object-fit: cover; }
+.ct-attack .card-art { background: #4a2420; } .ct-skill .card-art { background: #1f3346; } .ct-power .card-art { background: #4a3a16; }
+.card-type { order: 2; align-self: center; margin-top: -6cqw; padding: 0 5cqw; font-size: 7.5cqw; line-height: 1.5; border-radius: 4cqw; background: #2b2418; color: var(--c-parchment); letter-spacing: .1em; }
+.card-text { order: 3; flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 1cqh; padding: 1cqh 5cqw 2cqh; text-align: center; font-size: 9.6cqw; line-height: 1.25; font-weight: 700; }
+.card-text .ln { display: block; }
+.card-text b.p-num { color: #1a1208; }
+.card-text b.p-up { color: #2f7a2a; }
+.card-text b.p-down { color: #b02a20; }
+.card-text b.p-kw { color: #8a4a12; }
+.card-cost { position: absolute; left: -3%; top: -2%; width: 28cqw; height: 28cqw; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 17cqw; color: #2a1a06; background: radial-gradient(circle at 40% 35%, #ffe7a6, var(--c-energy) 50%, #8a5a14); box-shadow: 0 0 0 2px #1a1208; }
+
+.card-grid { align-content: start; padding: 8px 4px 8px 8px; }
+.card-grid .card { width: 100%; cursor: pointer; }
+.card-grid .empty { grid-column: 1 / -1; color: var(--c-muted); text-align: center; margin-top: 40px; }
+
+
+.name-l .card-name { font-size: 11cqw; }
+.name-xl .card-name { font-size: 9.5cqw; }
+.card-cost[hidden] { display: none; }
+.card-cost.changed { color: #0d4a12; box-shadow: 0 0 0 2px #1a1208, 0 0 8px 2px rgba(124,196,127,.9); }

@@ -1,0 +1,9 @@
+{
+  "id": "skin-demo",
+  "name": "UIスキンの見本",
+  "version": "0.1.0",
+  "files": {
+    "theme": "theme.json"
+  },
+  "assets": "assets/manifest.json"
+}
