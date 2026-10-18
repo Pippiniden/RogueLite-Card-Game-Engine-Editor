@@ -1,5 +1,6 @@
 import { EFFECTS, registerEffect, type EffectOp, type ParamSpec, type EffectCtx, type ChoiceReq } from './effects.ts';
 import { evalNum, evalCond } from './expr.ts';
+import { RUN_EFFECTS, registerRunEffect, type RunOp, type RunCtx } from './run-effects.ts';
 import type { Content } from './content.ts';
 
 /* ===== Plugins =====
@@ -17,6 +18,9 @@ export interface PluginApi {
   version: number;
   content: Content;
   registerEffect(op: string, def: Omit<EffectOp, 'group'> & { group?: EffectOp['group'] }): void;
+  /** effects outside combat (event options, relic pick-up) */
+  registerRunEffect(op: string, def: Omit<RunOp, 'group'> & { group?: RunOp['group'] }): void;
+  runEffects: typeof RUN_EFFECTS;
   /** browser only — undefined when running the checker / simulator in Node */
   registerFx?: (name: string, fn: (el: HTMLElement, step: Record<string, unknown>, stage: HTMLElement) => Animation | void) => void;
   registerWidget?: (bind: string, widget: unknown) => void;
@@ -26,7 +30,7 @@ export interface PluginApi {
   effects: typeof EFFECTS;
   log(...a: unknown[]): void;
 }
-export type { EffectOp, ParamSpec, EffectCtx, ChoiceReq };
+export type { EffectOp, ParamSpec, EffectCtx, ChoiceReq, RunOp, RunCtx };
 
 export interface PluginResult { path: string; ok: boolean; error?: string; added: string[] }
 
@@ -34,7 +38,7 @@ export interface PluginResult { path: string; ok: boolean; error?: string; added
 export async function loadPlugins(content: Content, importer: (path: string) => Promise<{ default?: unknown }>, extra: Partial<PluginApi> = {}): Promise<PluginResult[]> {
   const out: PluginResult[] = [];
   for (const path of content.plugins) {
-    const before = new Set(Object.keys(EFFECTS));
+    const before = new Set([...Object.keys(EFFECTS), ...Object.keys(RUN_EFFECTS).map(k => 'run:' + k)]);
     try {
       const mod = await importer(path);
       const fn = mod.default;
@@ -42,11 +46,12 @@ export async function loadPlugins(content: Content, importer: (path: string) => 
       const api: PluginApi = {
         version: PLUGIN_API_VERSION, content, evalNum, evalCond, effects: EFFECTS,
         registerEffect: (op, def) => registerEffect(op, { ...def, group: def.group ?? 'plugin' }),
+        registerRunEffect, runEffects: RUN_EFFECTS,
         log: (...a) => console.log(`[plugin ${path}]`, ...a),
         ...extra,
       };
       await fn(api);
-      out.push({ path, ok: true, added: Object.keys(EFFECTS).filter(k => !before.has(k)) });
+      out.push({ path, ok: true, added: [...Object.keys(EFFECTS), ...Object.keys(RUN_EFFECTS).map(k => 'run:' + k)].filter(k => !before.has(k)) });
     } catch (e) {
       out.push({ path, ok: false, error: (e as Error).message, added: [] });
     }

@@ -102,7 +102,11 @@ export const KINDS: Record<ListKind, KindDef> = {
       { k: 'tags', key: 'pools', label: '出る主人公のプール', help: '空ならすべての主人公に出る', suggest: pools },
       { k: 'modifiers', key: 'modifiers', label: '数値の補正（常時）' },
       { k: 'triggers', key: 'triggers', label: 'トリガー' },
-      { k: 'effects', key: 'onPickup', label: '拾った時（冒険全体の効果）', help: '使えるのは 最大HP・回復・HPを失う・ゴールド・カードを加える（デッキへ）' },
+      { k: 'effects', key: 'onPickup', label: '拾った時（冒険全体の効果）', run: true, help: 'イベントと同じ効果が使える（最大HP・ゴールド・カードを選んで取り除く・強化 など）' },
+      { k: 'group', label: 'ショップ', key: 'shop', optional: 'ショップの値段を変える', fields: [
+        { k: 'float', key: 'discount', label: '値引きの割合', step: 0.05, help: '0.5 で半額。複数持つと掛け合わせ' },
+        { k: 'int', key: 'removalPrice', label: 'カード削除の料金（固定）', optional: true, help: '空なら通常どおり（使うたびに上がる）' },
+      ] },
     ],
   },
 
@@ -139,6 +143,24 @@ export const KINDS: Record<ListKind, KindDef> = {
     ],
   },
 
+  events: {
+    label: 'イベント（？マス）',
+    sub: it => { const pages = Object.keys((it.pages as object) ?? {}).length; const f = [it.minFloor, it.maxFloor].some(v => v !== undefined) ? ` · ${(it.minFloor as number ?? 0) + 1}〜${it.maxFloor !== undefined ? (it.maxFloor as number) + 1 : ''}階` : ''; return `${pages}ページ${f}${it.repeatable ? ' · 何度も' : ''}`; },
+    make: id => ({ id, name: '新しいイベント', art: '', pages: { start: { text: '回廊の先に、何かがある。', options: [{ label: '調べる', effects: [{ op: 'gainGold', amount: 30 }], next: 'found' }, { label: '立ち去る' }] }, found: { text: '古い金貨が落ちていた。', options: [] } } }),
+    fields: [
+      { k: 'text', key: 'name', label: '名前' },
+      { k: 'asset', key: 'art', label: '絵', prefix: 'event', help: '780×440（横長）。画面の上に横いっぱいで出る' },
+      { k: 'int', key: 'minFloor', label: '出る最初の階', optional: true, help: '0 = 1階目' },
+      { k: 'int', key: 'maxFloor', label: '出る最後の階', optional: true },
+      { k: 'int', key: 'weight', label: '出やすさ', optional: true, help: '空なら1' },
+      { k: 'cond', key: 'when', label: '出る条件', help: '例: gold >= 100（空ならいつでも）' },
+      { k: 'refList', key: 'chars', label: '出る主人公', to: 'characters', help: '空なら全員' },
+      { k: 'bool', key: 'repeatable', label: '1回の冒険で何度も出る' },
+      { k: 'custom', render: obj => varsEditor(obj) },
+      { k: 'custom', render: obj => pagesEditor(obj) },
+    ],
+  },
+
   characters: {
     label: '主人公',
     sub: it => `HP ${it.hp} · エネルギー ${it.energy} · デッキ ${(it.deck as string[])?.length ?? 0}枚${it.locked ? ' · 非公開' : ''}`,
@@ -164,6 +186,7 @@ export const KINDS: Record<ListKind, KindDef> = {
 
 import { assetPicker } from './fields.ts';
 import { movesEditor, enemyFxEditor } from './enemy-editor.ts';
+import { varsEditor, pagesEditor } from './event-editor.ts';
 import { h, button, prompt } from './ui.ts';
 import { touched } from './state.ts';
 function portraitEditor(obj: Record<string, unknown>): HTMLElement {

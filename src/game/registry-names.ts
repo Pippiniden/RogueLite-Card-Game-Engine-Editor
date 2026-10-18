@@ -2,8 +2,31 @@
    `npm run check` warns when layout.qlayout uses a name that is not here, and the editor offers them.
    Plugins can add more at run time (registerWidget / registerAction). */
 
-export const SCREEN_IDS = ['TITLE', 'CHARSELECT', 'MAP', 'BATTLE', 'REWARD', 'REST', 'RESULT'] as const;
+export const SCREEN_IDS = ['TITLE', 'CHARSELECT', 'MAP', 'BATTLE', 'REWARD', 'REST', 'SHOP', 'EVENT', 'RESULT'] as const;
 export type ScreenId = typeof SCREEN_IDS[number];
+
+/** shop, event and the out-of-combat card picker (src/game/run-screens.ts) */
+export const RUN_WIDGET_INFO = {
+  'shop.merchant': '店主の絵',
+  'shop.title': 'ショップの見出し',
+  'shop.say': '店主のひとこと（買うと変わる）',
+  'shop.tab.cards': '「カード」タブ',
+  'shop.tab.other': '「レリック・サービス」タブ',
+  'shop.cards': '売り物のカード（値札つき。タップで確認）',
+  'shop.relics': '売り物のレリック（タップで確認）',
+  'shop.removal': 'カード削除サービス',
+  'shop.preview': '購入確認の中身（カードかレリック）',
+  'shop.buy': '購入ボタン',
+  'event.art': 'イベントの絵',
+  'event.name': 'イベントの名前',
+  'event.text': 'イベントの文章',
+  'event.options': 'イベントの選択肢（ボタンの列）',
+  'deckpick.title': 'デッキから選ぶ時の案内文',
+  'deckpick.cards': '選べるカード',
+  'deckpick.confirm': '決定ボタン',
+  'deckpick.cancel': 'やめる／選ばないボタン',
+} as const;
+export type RunWidgetName = keyof typeof RUN_WIDGET_INFO;
 
 export const WIDGET_INFO = {
   'title.bg': '背景（theme.backgrounds の画面ごとの絵）',
@@ -58,6 +81,7 @@ export const WIDGET_INFO = {
   'result.portrait': '結果画面の顔',
   'result.title': '勝敗',
   'result.stats': '記録',
+  ...RUN_WIDGET_INFO,
 } as const;
 export type WidgetName = keyof typeof WIDGET_INFO;
 export const WIDGET_NAMES = Object.keys(WIDGET_INFO) as WidgetName[];
@@ -76,7 +100,15 @@ export const ACTION_INFO = {
   leaveNode: 'マップへ戻る',
   restHeal: '焚き火で休む',
   toggleSound: '音のオン・オフ',
+  shopTab: 'ショップのタブを切り替える（shopTab(cards|other)）',
+  shopBuy: '確認中の品物を買う',
+  shopCancel: '購入確認を閉じる',
+  shopRemoval: 'カード削除を始める',
+  confirmDeckChoice: 'デッキから選んだカードで決定',
+  cancelDeckChoice: 'デッキからの選択をやめる（選ばない）',
 } as const;
+export const RUN_ACTIONS = ['shopTab', 'shopBuy', 'shopCancel', 'shopRemoval', 'confirmDeckChoice', 'cancelDeckChoice'] as const;
+export type RunActionName = typeof RUN_ACTIONS[number];
 export type ActionName = keyof typeof ACTION_INFO;
 export const ACTION_NAMES = Object.keys(ACTION_INFO) as ActionName[];
 

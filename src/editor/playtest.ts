@@ -66,9 +66,12 @@ export function playtestMenu(): HTMLElement {
   const c = ed.content;
   const chars = [...(c?.characters.values() ?? [])].map(x => [x.id, x.name] as [string, string]);
   const encs = [...(c?.encounters.values() ?? [])].map(x => [x.id, `${x.id}（${x.enemies.join('・')}）`] as [string, string]);
-  let ch = chars[0]?.[0] ?? '', en = encs[0]?.[0] ?? '';
+  const evs = [...(c?.events.values() ?? [])].map(x => [x.id, x.name] as [string, string]);
+  let ch = chars[0]?.[0] ?? '', en = encs[0]?.[0] ?? '', ev = evs[0]?.[0] ?? '';
   return h('div', { class: 'pt-menu' },
     button('タイトルから遊ぶ', () => playtest({ screen: 'TITLE' }), 'primary'),
     h('div', { class: 'pt-row' }, select(ch, chars, v => { ch = v; }), button('で冒険', () => playtest({ run: { char: ch } }))),
-    h('div', { class: 'pt-row' }, select(en, encs, v => { en = v; }), button('と戦闘', () => playtest({ battle: { encounter: en, char: ch } }))));
+    h('div', { class: 'pt-row' }, select(en, encs, v => { en = v; }), button('と戦闘', () => playtest({ battle: { encounter: en, char: ch } }))),
+    evs.length ? h('div', { class: 'pt-row' }, select(ev, evs, v => { ev = v; }), button('を試す', () => playtest({ event: { id: ev, char: ch, gold: 120, floor: 5 } }))) : null,
+    button('ショップを試す（300ゴールド）', () => playtest({ shop: { char: ch, gold: 300 } })));
 }

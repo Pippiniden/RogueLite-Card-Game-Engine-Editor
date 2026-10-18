@@ -177,6 +177,48 @@ img { display: block; max-width: 100%; }
 @keyframes flicker { 50% { scale: 1.03 .97; filter: brightness(1.1); } }
 [data-bind="result.stats"] { text-align: center; color: var(--c-ink); }
 
+/* ===== shop ===== */
+.merchant img { width: 100%; height: 100%; object-fit: contain; }
+[data-bind="shop.title"], [data-bind="event.name"] { font-family: var(--f-display); font-size: 22px; font-weight: 700; color: var(--c-parchment); letter-spacing: .08em; }
+[data-bind="shop.say"] { position: relative; padding: 8px 12px; border-radius: 10px; background: #1d2028; border: 1px solid #333846; color: var(--c-ink); font-size: 13px; line-height: 1.4; }
+[data-bind="shop.say"]::before { content: ''; position: absolute; left: -7px; top: 16px; border: 6px solid transparent; border-right-color: #333846; border-left: 0; }
+[data-bind="shop.tab.cards"], [data-bind="shop.tab.other"] { font-size: 14px; border-radius: 20px; background: #1a1c22; border-color: #333846; color: var(--c-muted); }
+[data-bind="shop.tab.cards"].on, [data-bind="shop.tab.other"].on { color: var(--c-parchment); border-color: var(--c-ember); background: #2a1f16; box-shadow: inset 0 0 0 1px var(--c-ember); }
+.shop-grid { align-content: start; }
+.shop-item { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+.shop-item .card { width: 100%; }
+.price { display: inline-flex; align-items: center; font-weight: 800; font-size: 15px; color: var(--c-parchment); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.price.short { color: #e07a6a; }
+.reward-item span.price, .shop-service span.price { display: inline-flex; flex-direction: row; }
+/* cost badges and sale tags stick out of the card's top-left corner: keep them inside the scroll box */
+.card-grid { padding: 8px 4px 8px 10px; }
+[data-bind="deckpick.confirm"], [data-bind="deckpick.cancel"] { font-size: 14px; letter-spacing: 0; }
+.sale-badge { position: absolute; top: -4px; left: -4px; z-index: 2; padding: 2px 7px; border-radius: 6px; background: #c8443b; color: #fff; font-size: 11px; letter-spacing: .1em; box-shadow: 0 2px 6px rgba(0,0,0,.5); }
+.shop-sale .price, .shop-item.sale .price { color: #ffd27a; }
+.shop-h { margin: 2px 2px 0; font-size: 12px; font-weight: 500; letter-spacing: .14em; color: var(--c-muted); }
+.shop-relic { width: 100%; }
+.shop-relic .price, .shop-service .price { margin-left: auto; padding-left: 8px; }
+.shop-service { flex-direction: row; justify-content: flex-start; gap: 10px; padding: 8px 14px; text-align: left; }
+.shop-service span { display: flex; flex-direction: column; gap: 2px; }
+.shop-service small { font-family: var(--f-body); font-size: 12px; font-weight: 500; color: var(--c-muted); }
+.shop-preview-card .card { width: 170px; }
+.shop-preview-relic { padding: 8px 4px 12px; }
+.shop-preview-relic img { width: 72px; height: 72px; }
+
+/* ===== event ===== */
+.event-art { overflow: hidden; }
+.event-art img { width: 100%; height: 100%; object-fit: cover; -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); }
+[data-bind="event.text"] { color: var(--c-ink); font-size: 15px; line-height: 1.75; }
+[data-bind="event.text"] p { margin: 0; }
+.event-option { width: 100%; min-height: 56px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; padding: 9px 14px; border-radius: 10px; border: 1px solid #4a4030; background: #201d18; text-align: left; cursor: pointer; flex: none; }
+.event-option b { font-size: 15px; color: var(--c-parchment); }
+.event-option small { font-size: 12px; color: var(--c-muted); line-height: 1.4; }
+.event-option small.why { color: #e07a6a; }
+.event-option:disabled { opacity: .55; cursor: default; }
+.event-option:active:not(:disabled) { filter: brightness(1.2); }
+[data-bind="deckpick.title"] { font-family: var(--f-display); font-size: 18px; font-weight: 600; color: var(--c-parchment); }
+[data-bind="battle.banner"] { white-space: pre-line; text-align: center; line-height: 1.4; }
+
 /* ===== effects ===== */
 .fx-vignette { position: absolute; inset: 0; pointer-events: none; z-index: 80; box-shadow: inset 0 0 90px 30px var(--vc); }
 .fx-float { position: absolute; z-index: 90; pointer-events: none; font-family: var(--f-display); font-weight: 800; font-size: 28px; white-space: nowrap; text-shadow: 0 2px 0 #000, 0 0 6px #000; }

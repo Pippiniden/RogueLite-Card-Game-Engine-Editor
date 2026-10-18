@@ -221,6 +221,8 @@ const RELIC = {
   vial: icon('<path d="M26 14 h12 v10 q10 6 10 16 q0 12 -16 12 q-16 0 -16 -12 q0 -10 10 -16z" fill="#7ccc4a"/>', '#1f2a1c'),
 };
 RELIC.nut = icon('<ellipse cx="32" cy="36" rx="14" ry="16" fill="#9a6a3a"/><path d="M22 28 q10 -16 20 0" fill="#6a4a2a"/><path d="M32 14 v8" stroke="#5a8a3a" stroke-width="4"/>', '#22201a');
+RELIC.tally = icon('<rect x="18" y="12" width="28" height="40" rx="4" fill="#c9a86a"/><path d="M24 22 h16 M24 30 h16 M24 38 h10" stroke="#5a3e1e" stroke-width="3"/><circle cx="40" cy="44" r="5" fill="#c8443b"/>', '#2a2214');
+RELIC.mask = icon('<path d="M14 24 q18 -10 36 0 q2 22 -18 30 q-20 -8 -18 -30z" fill="#e9dcbf"/><path d="M22 30 q4 -4 8 0 M34 30 q4 -4 8 0" stroke="#2a1d1a" stroke-width="3" fill="none"/><path d="M24 40 q8 8 16 0" stroke="#2a1d1a" stroke-width="3" fill="none"/>', '#2a2420');
 RELIC.core = icon('<path d="M32 12 l16 20 l-16 20 l-16 -20z" fill="#7ab6d6"/><path d="M28 22 l6 10 l-4 4 l6 8" stroke="#1d2a33" stroke-width="2.5" fill="none"/>', '#16202a');
 for (const [k, v] of Object.entries(RELIC)) put(`relic.${k}`, `icon/relic_${k}.svg`, v);
 const INTENT = {
@@ -237,6 +239,8 @@ const NODE = {
   rest: icon('<path d="M20 50 l24 -10 M20 40 l24 10" stroke="#8a6440" stroke-width="5" stroke-linecap="round"/><path d="M32 12 q12 12 8 24 q-4 6 -8 6 q-8 0 -8 -8 q0 -10 8 -22z" fill="#f08a3a"/>'),
   treasure: icon('<rect x="14" y="26" width="36" height="24" rx="3" fill="#8a6440"/><path d="M14 30 q18 -16 36 0" fill="#a8783c"/><rect x="28" y="32" width="8" height="8" fill="#f0c060"/>'),
   boss: icon('<path d="M10 22 l10 10 l12 -16 l12 16 l10 -10 l-4 30 h-36z" fill="#f0c060"/>'),
+  shop: icon('<circle cx="32" cy="32" r="19" fill="#f0c060" stroke="#8a5a14" stroke-width="3"/><circle cx="32" cy="32" r="13" fill="none" stroke="#c48a2a" stroke-width="2"/><text x="32" y="40" font-size="20" font-weight="800" text-anchor="middle" fill="#7a4a10" font-family="serif">G</text>'),
+  event: icon('<text x="32" y="47" font-size="40" font-weight="700" text-anchor="middle" fill="#c9b8f0" font-family="serif">?</text>'),
 };
 for (const [k, v] of Object.entries(NODE)) put(`node.${k}`, `icon/node_${k}.svg`, v);
 
@@ -246,6 +250,28 @@ put('scene.campfire', 'scene/campfire.svg', svg(200, 200, `
   <path d="M50 170 l100 -26 M50 144 l100 26" stroke="#6a4a2a" stroke-width="12" stroke-linecap="round"/>
   <path d="M100 40 q44 44 30 96 q-10 18 -30 18 q-24 0 -32 -20 q-10 -40 32 -94z" fill="#f08a3a"/>
   <path d="M100 86 q22 26 12 54 q-6 8 -12 8 q-14 0 -16 -14 q0 -24 16 -48z" fill="#ffd27a"/>`));
+
+put('scene.merchant', 'scene/merchant.svg', svg(200, 200, `
+  <circle cx="100" cy="110" r="84" fill="#f0c060" opacity=".08"/>
+  <path d="M40 196 q4 -86 60 -96 q56 10 60 96z" fill="#3b3346"/>
+  <path d="M62 96 q38 -76 76 0 q-6 22 -38 26 q-32 -4 -38 -26z" fill="#4a4058"/>
+  <ellipse cx="100" cy="98" rx="24" ry="18" fill="#14111a"/>
+  <circle cx="91" cy="98" r="3.5" fill="#ffd27a"/><circle cx="109" cy="98" r="3.5" fill="#ffd27a"/>
+  <rect x="128" y="132" width="22" height="30" rx="5" fill="#2a2016"/><rect x="132" y="137" width="14" height="20" rx="3" fill="#ffc35a"/>
+  <circle cx="139" cy="147" r="20" fill="#ffc35a" opacity=".22"/>`));
+
+/* ===== event art: 780×440 (about 16:9, shown full width above the text) ===== */
+const scene = (sky, ground, body) => svg(780, 440, `<rect width="780" height="440" fill="url(#sky)"/><path d="M0 330 q390 -40 780 0 v110 h-780z" fill="${ground}"/>${body}<rect width="780" height="440" fill="url(#vig)"/>`,
+  `<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient><radialGradient id="vig" cx="50%" cy="50%" r="75%"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>`);
+const EVENT = {
+  shrine: scene(['#1c2430', '#2c3a2c'], '#1d261a', '<path d="M300 330 v-120 h180 v120" fill="#4d4f57"/><path d="M280 214 l110 -70 l110 70z" fill="#5c5e68"/><rect x="368" y="236" width="44" height="64" rx="8" fill="#2a2016"/><rect x="376" y="244" width="28" height="44" rx="5" fill="#f0c060"/><circle cx="390" cy="266" r="60" fill="#f0c060" opacity=".15"/><path d="M300 330 q-30 -20 -60 0 M480 330 q30 -20 60 0" stroke="#3a5a2c" stroke-width="16" fill="none"/>'),
+  spring: scene(['#14202e', '#1e3a44'], '#162a26', '<ellipse cx="390" cy="352" rx="220" ry="42" fill="#5ab6c9" opacity=".75"/><ellipse cx="390" cy="346" rx="150" ry="22" fill="#bfeef5" opacity=".5"/><circle cx="300" cy="200" r="6" fill="#bfeef5"/><circle cx="470" cy="160" r="4" fill="#bfeef5"/><circle cx="420" cy="230" r="5" fill="#bfeef5"/><path d="M120 330 q20 -140 60 -200 M660 330 q-20 -150 -50 -210" stroke="#2c4a3a" stroke-width="22" fill="none"/>'),
+  smith: scene(['#1e1614', '#3a2218'], '#22160f', '<rect x="300" y="250" width="180" height="40" rx="6" fill="#4d4f57"/><path d="M330 290 h120 l-20 40 h-80z" fill="#3a3c44"/><path d="M420 160 l70 -70 l14 14 l-70 70z" fill="#8c8f99"/><path d="M380 250 q10 -40 40 -40" stroke="#f08a3a" stroke-width="6" fill="none"/><circle cx="420" cy="244" r="40" fill="#f08a3a" opacity=".25"/><path d="M220 330 q0 -150 60 -170 q40 20 30 170" fill="#c9d2dc" opacity=".25"/>'),
+  gambler: scene(['#191424', '#2a1e34'], '#1a1420', '<rect x="250" y="250" width="280" height="24" rx="6" fill="#5a3e1e"/><path d="M270 274 v56 M510 274 v56" stroke="#5a3e1e" stroke-width="12"/><circle cx="390" cy="160" r="46" fill="#e9dcbf"/><circle cx="374" cy="156" r="10" fill="#191424"/><circle cx="406" cy="156" r="10" fill="#191424"/><path d="M372 186 h36" stroke="#191424" stroke-width="5"/><rect x="330" y="226" width="26" height="26" rx="5" fill="#e9dcbf" transform="rotate(-12 343 239)"/><rect x="420" y="228" width="26" height="26" rx="5" fill="#e9dcbf" transform="rotate(10 433 241)"/><circle cx="343" cy="239" r="3" fill="#c8443b"/><circle cx="428" cy="236" r="3" fill="#191424"/><circle cx="438" cy="246" r="3" fill="#191424"/>'),
+  ambush: scene(['#0f1216', '#1c2026'], '#121418', '<path d="M140 330 v-240 h60 v240 M580 330 v-260 h70 v260" fill="#262a30"/><circle cx="560" cy="210" r="6" fill="#f2a59c"/><circle cx="584" cy="210" r="6" fill="#f2a59c"/><circle cx="220" cy="240" r="5" fill="#f2a59c"/><circle cx="238" cy="240" r="5" fill="#f2a59c"/>'),
+  library: scene(['#1a1714', '#2e2620'], '#1d1814', '<rect x="180" y="110" width="420" height="220" fill="#3a2c20"/><path d="M180 180 h420 M180 250 h420" stroke="#5a4430" stroke-width="10"/><path d="M200 172 v-56 M226 172 v-48 M260 172 v-60 M300 172 v-40 M480 172 v-58 M520 172 v-50 M220 242 v-52 M250 242 v-60 M440 242 v-46 M560 242 v-56" stroke="#8a6440" stroke-width="18"/><path d="M330 330 l60 -40 l60 40z" fill="#c9b48a"/><path d="M360 300 l60 30" stroke="#5a4430" stroke-width="3"/>'),
+};
+for (const [k, v] of Object.entries(EVENT)) put(`event.${k}`, `event/${k}.svg`, v);
 
 const manifest = { $comment: '論理キー → ファイル。差し替えは右側のパスを変えるだけ（PNG/WebP/SVG）。無いキーは仮の絵で表示される', ...files };
 writeFileSync(new URL('manifest.json', OUT), JSON.stringify(manifest, null, 2) + '\n');

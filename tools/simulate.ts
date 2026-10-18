@@ -5,6 +5,8 @@ import { newRun, reachable, enterNode, startCombat, finishCombat, takeGold, take
 import { canUpgrade } from '../src/engine/content.ts';
 import type { Combat } from '../src/engine/combat.ts';
 import { Rng } from '../src/engine/rng.ts';
+import { eventOptions, chooseEventOption, resolveChoice, choiceCandidates, buyCard, startRemoval, removalPrice, shopPrice } from '../src/engine/run-effects.ts';
+import type { RunState } from '../src/engine/types.ts';
 
 const args = Object.fromEntries(process.argv.slice(2).map(a => a.split('=')));
 const RUNS = Number(args.runs ?? 300);
@@ -40,6 +42,19 @@ function botTurn(cb: Combat) {
   if (!cb.over) cb.endTurn();
 }
 
+/** answer a pending deck pick: remove / transform the weakest-looking cards, take or upgrade at random */
+function botChoice(run: RunState, pick: Rng) {
+  for (let g = 0; g < 10 && run.choice; g++) {
+    const ch = run.choice;
+    const cands = choiceCandidates(c, run, ch);
+    const bad = (id: string) => ['curse', 'status'].includes(c.cards.get(id)?.type ?? '') ? 0 : c.cards.get(id)?.rarity === 'starter' ? 1 : 2;
+    const order = ch.op === 'remove' || ch.op === 'transform' ? [...cands].sort((a, b) => bad(a.id) - bad(b.id)) : pick.shuffle([...cands]);
+    const res = resolveChoice(c, run, order.slice(0, ch.count).map(x => x.uid));
+    if (res.status === 'invalid') { if (ch.canCancel) resolveChoice(c, run, []); else break; }
+  }
+}
+const stat = { events: 0, shops: 0, spent: 0, removed: 0 };
+
 const deaths = new Map<string, number>();
 let wins = 0, floors = 0, turns = 0, battles = 0;
 const t0 = Date.now();
@@ -50,6 +65,25 @@ for (let r = 0; r < RUNS; r++) {
     const next = reachable(run);
     if (!next.length) throw new Error('行き止まりのマップ');
     enterNode(c, run, pick.pick(next));
+    if (run.phase === 'event') {
+      stat.events++;
+      for (let g = 0; g < 10 && run.phase === 'event'; g++) {
+        const opts = eventOptions(c, run).filter(o => o.enabled);
+        if (!opts.length) { leaveNode(run); break; }
+        chooseEventOption(c, run, pick.pick(opts).index);
+        botChoice(run, pick);
+      }
+    }
+    if (run.phase === 'shop') {
+      stat.shops++;
+      const g0 = run.gold;
+      // remove a starter card first, then buy whatever is affordable (cheapest first)
+      if (run.gold >= removalPrice(c, run) && startRemoval(c, run).ok) { botChoice(run, pick); stat.removed++; }
+      const items = run.shop!.cards.map((it, i) => ({ i, p: shopPrice(c, run, it.price) })).sort((a, b) => a.p - b.p);
+      for (const it of items.slice(0, 2)) if (run.gold >= it.p) buyCard(c, run, it.i);
+      stat.spent += g0 - run.gold;
+      leaveNode(run);
+    }
     if (run.phase === 'battle') {
       const cb = startCombat(c, run); cb.start(); battles++;
       let n = 0; while (!cb.over && n++ < 80) botTurn(cb);
@@ -58,7 +92,7 @@ for (let r = 0; r < RUNS; r++) {
       if (run.phase === 'lost') deaths.set(run.encounter!, (deaths.get(run.encounter!) || 0) + 1);
     }
     if (run.phase === 'reward' || run.phase === 'treasure') {
-      takeGold(run); takeRelic(c, run);
+      takeGold(run); takeRelic(c, run); botChoice(run, pick);
       const p = run.pending!;
       if (p.cards.length) takeCard(run, p.cards[pick.int(0, p.cards.length - 1)].uid);
       leaveNode(run);
@@ -72,4 +106,5 @@ for (let r = 0; r < RUNS; r++) {
   floors += run.stats.floors;
 }
 console.log(`${RUNS} ラン（${Date.now() - t0}ms）: 勝率 ${(wins / RUNS * 100).toFixed(1)}% · 平均到達 ${(floors / RUNS).toFixed(1)}階 · 1戦の平均 ${(turns / battles).toFixed(1)}ターン`);
+console.log(`ショップ ${(stat.shops / RUNS).toFixed(1)}回/ラン（平均 ${stat.shops ? Math.round(stat.spent / stat.shops) : 0}ゴールド使用・削除 ${stat.removed}回）· イベント ${(stat.events / RUNS).toFixed(1)}回/ラン`);
 console.log('負けた遭遇: ' + [...deaths].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(' / '));

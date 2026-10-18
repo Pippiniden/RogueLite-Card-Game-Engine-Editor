@@ -6,7 +6,7 @@ import { makeZip, readZip } from './zip.ts';
    Sources: the site it is served from, a local folder (File System Access API), picked files, or a zip.
    JSON is parsed into editable models; saving serializes them back (one entry per line in lists). ===== */
 
-export const LIST_KINDS = ['cards', 'statuses', 'relics', 'enemies', 'encounters', 'characters'] as const;
+export const LIST_KINDS = ['cards', 'statuses', 'relics', 'enemies', 'encounters', 'characters', 'events'] as const;
 export type ListKind = typeof LIST_KINDS[number];
 export const OBJ_KINDS = ['rules', 'vfx', 'theme', 'text', 'audio'] as const;
 export type ObjKind = typeof OBJ_KINDS[number];
@@ -121,7 +121,7 @@ export class Project {
     for (const id of this.index.packs) {
       const dir = `${ROOT}/${id}`;
       const manifest = JSON.parse(this.files.get(`${dir}/pack.json`)?.text ?? `{"id":"${id}","name":"${id}","version":"0.1.0","files":{}}`) as PackManifest;
-      const pm: PackModel = { id, dir, manifest, lists: { cards: [], statuses: [], relics: [], enemies: [], encounters: [], characters: [] }, objs: {}, assets: null, layout: null, plugins: [] };
+      const pm: PackModel = { id, dir, manifest, lists: { cards: [], statuses: [], relics: [], enemies: [], encounters: [], characters: [], events: [] }, objs: {}, assets: null, layout: null, plugins: [] };
       const read = (f: string) => { const t = this.files.get(`${dir}/${f}`)?.text; return t === undefined ? undefined : JSON.parse(t); };
       for (const k of LIST_KINDS) for (const f of this.fileList(manifest, k)) pm.lists[k].push({ file: f, items: (read(f) ?? []) as Item[] });
       for (const k of OBJ_KINDS) { const f = this.fileList(manifest, k)[0]; if (f) pm.objs[k] = { file: f, data: read(f) ?? {} }; }
@@ -212,11 +212,11 @@ export class Project {
   }
   /** rename an id and update references to it everywhere */
   rename(kind: ListKind, from: string, to: string): number {
-    const keys: Record<ListKind, string[]> = { cards: ['card'], statuses: ['status'], relics: ['relic'], enemies: [], encounters: [], characters: [] };
+    const keys: Record<ListKind, string[]> = { cards: ['card'], statuses: ['status'], relics: ['relic'], enemies: [], encounters: ['encounter'], characters: [], events: [] };
     let n = 0;
     const walk = (v: unknown, parentKey = ''): unknown => {
       if (Array.isArray(v)) return v.map(x => {
-        if (x === from && ((kind === 'cards' && parentKey === 'deck') || (kind === 'relics' && parentKey === 'relics') || (kind === 'enemies' && parentKey === 'enemies'))) { n++; return to; }
+        if (x === from && ((kind === 'cards' && parentKey === 'deck') || (kind === 'relics' && parentKey === 'relics') || (kind === 'enemies' && parentKey === 'enemies') || (kind === 'characters' && parentKey === 'chars'))) { n++; return to; }
         return walk(x, parentKey);
       });
       if (v && typeof v === 'object') {
@@ -278,7 +278,7 @@ export class Project {
   addPack(id: string, name: string) {
     const dir = `${ROOT}/${id}`;
     const manifest: PackManifest = { id, name, version: '0.1.0', files: {}, assets: 'assets/manifest.json' };
-    this.packs.set(id, { id, dir, manifest, lists: { cards: [], statuses: [], relics: [], enemies: [], encounters: [], characters: [] }, objs: {}, assets: { file: 'assets/manifest.json', map: {} }, layout: null, plugins: [] });
+    this.packs.set(id, { id, dir, manifest, lists: { cards: [], statuses: [], relics: [], enemies: [], encounters: [], characters: [], events: [] }, objs: {}, assets: { file: 'assets/manifest.json', map: {} }, layout: null, plugins: [] });
     this.index.packs.push(id);
     this.active = id;
     this.changed();

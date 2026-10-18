@@ -1,5 +1,5 @@
 import type {
-  CardDef, StatusDef, RelicDef, EnemyDef, EncounterDef, CharacterDef, Rules, VfxPresets, Theme, TextTable, AudioDef,
+  CardDef, StatusDef, RelicDef, EnemyDef, EncounterDef, CharacterDef, EventDef, Rules, VfxPresets, Theme, TextTable, AudioDef,
   PackManifest, ContentKind, CardInst,
 } from './types.ts';
 
@@ -15,6 +15,7 @@ export interface Content {
   enemies: Map<string, EnemyDef>;
   encounters: Map<string, EncounterDef>;
   characters: Map<string, CharacterDef>;
+  events: Map<string, EventDef>;
   rules: Rules;
   vfx: VfxPresets;
   theme: Theme;
@@ -28,7 +29,7 @@ export interface Content {
   assets: Map<string, string>;
 }
 
-const LIST_KINDS = ['cards', 'statuses', 'relics', 'enemies', 'encounters', 'characters'] as const;
+const LIST_KINDS = ['cards', 'statuses', 'relics', 'enemies', 'encounters', 'characters', 'events'] as const;
 const OBJ_KINDS = ['rules', 'vfx', 'theme', 'text', 'audio'] as const;
 
 export type ReadText = (path: string) => Promise<string>;
@@ -46,7 +47,7 @@ export async function loadContent(root: string, read: ReadText, only?: string[])
   const idx = only?.length ? { packs: only } : JSON.parse(await read(`${root}/index.json`)) as { packs: string[] };
   const c: Content = {
     packs: [], cards: new Map(), statuses: new Map(), relics: new Map(), enemies: new Map(),
-    encounters: new Map(), characters: new Map(),
+    encounters: new Map(), characters: new Map(), events: new Map(),
     rules: {} as Rules, vfx: {}, theme: {} as Theme,
     text: { ui: {}, keywords: {}, effects: {}, intents: {}, nodes: {}, cardTypes: {}, rarities: {} },
     audio: { se: {}, bgm: {} }, plugins: [], layout: '', assets: new Map(),

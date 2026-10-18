@@ -1,6 +1,7 @@
 import { EFFECTS, EFFECT_GROUPS, TARGET_LABELS, type ParamSpec } from '../engine/effects.ts';
 import { checkExpr } from '../engine/expr.ts';
 import { describeEffect } from '../engine/describe.ts';
+import { RUN_EFFECTS, RUN_GROUPS, describeRun } from '../engine/run-effects.ts';
 import type { Effect, Trigger, Modifier, CardDef } from '../engine/types.ts';
 import { ed, touched } from './state.ts';
 import { h, row, input, textarea, select, checkbox, button, clear, prompt, toast } from './ui.ts';
@@ -23,7 +24,7 @@ export type F =
   | { k: 'flags'; key: string; label: string; options: Opt[]; help?: string; free?: boolean }
   | { k: 'asset'; key: string; label: string; prefix: string; audio?: boolean; help?: string }
   | { k: 'range'; key: string; label: string; help?: string }
-  | { k: 'effects'; key: string; label: string; help?: string; card?: boolean }
+  | { k: 'effects'; key: string; label: string; help?: string; card?: boolean; run?: boolean }
   | { k: 'triggers'; key: string; label: string; help?: string }
   | { k: 'modifiers'; key: string; label: string; help?: string }
   | { k: 'statusMap'; key: string; label: string; help?: string }
@@ -96,7 +97,8 @@ function field(obj: Obj, f: F): HTMLElement {
     }
     case 'effects': {
       const list = (obj[f.key] as Effect[]) ?? (obj[f.key] = []);
-      return h('div', { class: 'fr wide' }, h('label', null, f.label), effectsEditor(list as Effect[], f.card ? (obj as unknown as CardDef) : undefined), f.help ? h('p', { class: 'help' }, f.help) : null);
+      const ed2 = f.run ? effectsEditor(list as Effect[], undefined, { run: true }) : effectsEditor(list as Effect[], f.card ? (obj as unknown as CardDef) : undefined);
+      return h('div', { class: 'fr wide' }, h('label', null, f.label), ed2, f.help ? h('p', { class: 'help' }, f.help) : null);
     }
     case 'triggers': {
       const list = (obj[f.key] as Trigger[]) ?? [];
@@ -218,23 +220,34 @@ export function assetPicker(obj: Obj, key: string, prefix: string, audio = false
 }
 
 /* ----- effects ----- */
-function opOptions(): { group: string; items: Opt[] }[] {
+/** combat effects (cards, enemies, statuses) or run effects (events, relic pick-up): same editor, different registry */
+export interface EffOpts {
+  run?: boolean;
+  /** event page ids for "goto" */
+  pages?: () => string[];
+}
+type AnyOp = { label: string; group: string; params: Record<string, ParamSpec>; defaultTo?: unknown };
+const regOf = (o: EffOpts): Record<string, AnyOp> => o.run ? RUN_EFFECTS : EFFECTS;
+function opOptions(o: EffOpts): { group: string; items: Opt[] }[] {
   const groups = new Map<string, Opt[]>();
-  for (const [op, d] of Object.entries(EFFECTS)) { const g = EFFECT_GROUPS[d.group] ?? d.group; if (!groups.has(g)) groups.set(g, []); groups.get(g)!.push([op, d.label]); }
+  const names: Record<string, string> = o.run ? RUN_GROUPS : EFFECT_GROUPS;
+  for (const [op, d] of Object.entries(regOf(o))) { const g = names[d.group] ?? d.group; if (!groups.has(g)) groups.set(g, []); groups.get(g)!.push([op, d.label]); }
   return [...groups].map(([group, items]) => ({ group, items }));
 }
-function defaultsFor(op: string, keepTo?: unknown): Effect {
+function defaultsFor(op: string, o: EffOpts, keepTo?: unknown): Effect {
   const e: Effect = { op };
-  for (const [k, s] of Object.entries(EFFECTS[op]?.params ?? {})) {
+  const reg = regOf(o);
+  for (const [k, s] of Object.entries(reg[op]?.params ?? {})) {
     if (k === 'to') continue;
-    if (s.required) e[k] = s.default ?? (s.type === 'num' ? 1 : s.type === 'effects' ? [] : s.type === 'status' ? 'strength' : s.type === 'card' || s.type === 'cardOrSelf' ? (ed.project.ids('cards')[0] ?? '') : '');
+    if (s.required) e[k] = s.default ?? (s.type === 'num' ? 1 : s.type === 'effects' ? [] : s.type === 'status' ? 'strength' : s.type === 'card' || s.type === 'cardOrSelf' ? (ed.project.ids('cards')[0] ?? '')
+      : s.type === 'encounter' ? (ed.project.ids('encounters')[0] ?? '') : s.type === 'page' ? (o.pages?.()[0] ?? 'start') : '');
     else if (s.type === 'effects') e[k] = [];
   }
-  if (keepTo && EFFECTS[op]?.params.to) e.to = keepTo as Effect['to'];
+  if (keepTo && reg[op]?.params.to) e.to = keepTo as Effect['to'];
   return e;
 }
 
-function paramControl(e: Effect, k: string, s: ParamSpec, redraw: () => void, card?: CardDef): HTMLElement {
+function paramControl(e: Effect, k: string, s: ParamSpec, redraw: () => void, card: CardDef | undefined, o: EffOpts): HTMLElement {
   const set = (v: unknown) => { setOrDelete(e as Obj, k, v); touched(); };
   switch (s.type) {
     case 'num': case 'int': return exprInput(e[k], v => set(v), { placeholder: s.default !== undefined ? String(s.default) : '' });
@@ -245,31 +258,35 @@ function paramControl(e: Effect, k: string, s: ParamSpec, redraw: () => void, ca
     case 'status': return select(String(e[k] ?? ''), [['$self', 'この状態自身（$self）'], ...idOptions('statuses')], v => set(v));
     case 'card': return select(String(e[k] ?? ''), idOptions('cards'), v => set(v));
     case 'cardOrSelf': return select(String(e[k] ?? ''), [['$self', 'このカードのコピー（$self）'], ...idOptions('cards')], v => set(v));
+    case 'relic': return select(String(e[k] ?? ''), idOptions('relics', s.help ?? '（ランダム）'), v => set(v || undefined));
+    case 'encounter': return select(String(e[k] ?? ''), ed.project.merged('encounters').map(({ item }) => [item.id, `${item.id}（${(item.enemies as string[] ?? []).map(x => (ed.project.find('enemies', x)?.item.name as string) ?? x).join('・')}）`] as Opt), v => set(v));
+    case 'page': return select(String(e[k] ?? ''), (o.pages?.() ?? []).map(p => [p, p] as Opt), v => set(v));
     case 'target': {
       const def = EFFECTS[e.op]?.defaultTo;
       const defLabel = typeof def === 'string' ? TARGET_LABELS[def] : def === null ? '—' : '効果に合わせる';
       return select(String(e[k] ?? ''), [['', `既定（${card?.target === 'all_enemies' && def === 'target' ? '敵全体' : defLabel}）`], ...Object.entries(TARGET_LABELS) as Opt[]], v => set(v || undefined));
     }
-    case 'effects': { const list = (e[k] as Effect[]) ?? (e[k] = []); return effectsEditor(list as Effect[], card); }
+    case 'effects': { const list = (e[k] as Effect[]) ?? (e[k] = []); return effectsEditor(list as Effect[], card, o); }
   }
   void redraw;
   return h('span');
 }
 
-export function effectsEditor(list: Effect[], card?: CardDef): HTMLElement {
+export function effectsEditor(list: Effect[], card?: CardDef, o: EffOpts = {}): HTMLElement {
   const box = h('div', { class: 'effects' });
+  const reg = regOf(o);
   const draw = () => {
     clear(box);
     list.forEach((e, i) => {
-      const op = EFFECTS[e.op];
+      const op = reg[e.op];
       const desc = h('p', { class: 'eff-desc' });
       const updateDesc = () => {
         if (!ed.content) return;
-        try { desc.textContent = '→ ' + describeEffect(ed.content, e, card ?? null).map(p => p.t).join(''); } catch { desc.textContent = ''; }
+        try { desc.textContent = '→ ' + (o.run ? describeRun(ed.content, [e]) || '（表示なし）' : describeEffect(ed.content, e, card ?? null).map(p => p.t).join('')); } catch { desc.textContent = ''; }
       };
       const params = h('div', { class: 'eff-params' });
       for (const [k, s] of Object.entries(op?.params ?? {})) {
-        const ctl = paramControl(e, k, s, draw, card);
+        const ctl = paramControl(e, k, s, draw, card, o);
         const wide = s.type === 'effects';
         params.appendChild(h('div', { class: `ep${wide ? ' wide' : ''}`, title: s.help ?? '' }, h('span', { class: 'ep-l' }, s.label), ctl));
       }
@@ -277,7 +294,7 @@ export function effectsEditor(list: Effect[], card?: CardDef): HTMLElement {
       params.addEventListener('change', () => setTimeout(updateDesc, 0));
       const head = h('div', { class: 'eff-head' },
         h('span', { class: 'eff-n mono' }, String(i + 1)),
-        select(e.op, op ? opOptions() : [[e.op, `${e.op}（未登録）`], ...opOptions().flatMap(g => g.items)], v => { list[i] = defaultsFor(v, e.to); touched(); draw(); }, { class: 'eff-op' }),
+        select(e.op, op ? opOptions(o) : [[e.op, `${e.op}（未登録）`], ...opOptions(o).flatMap(g => g.items)], v => { list[i] = defaultsFor(v, o, e.to); touched(); draw(); }, { class: 'eff-op' }),
         h('span', { class: 'eff-tools' },
           button('↑', () => { if (i) { [list[i - 1], list[i]] = [list[i], list[i - 1]]; touched(); draw(); } }, 'icon', { title: '上へ', disabled: !i }),
           button('↓', () => { if (i < list.length - 1) { [list[i + 1], list[i]] = [list[i], list[i + 1]]; touched(); draw(); } }, 'icon', { title: '下へ', disabled: i === list.length - 1 }),
@@ -286,7 +303,7 @@ export function effectsEditor(list: Effect[], card?: CardDef): HTMLElement {
       box.appendChild(h('div', { class: 'eff' }, head, params, desc));
       updateDesc();
     });
-    box.appendChild(h('div', { class: 'eff-add' }, select('', [['', '＋ 効果を追加…'], ...opOptions()], v => { if (!v) return; list.push(defaultsFor(v)); touched(); draw(); })));
+    box.appendChild(h('div', { class: 'eff-add' }, select('', [['', '＋ 効果を追加…'], ...opOptions(o)], v => { if (!v) return; list.push(defaultsFor(v, o)); touched(); draw(); })));
   };
   draw();
   return box;

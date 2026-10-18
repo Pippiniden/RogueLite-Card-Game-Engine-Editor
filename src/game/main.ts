@@ -1,8 +1,11 @@
 import './cards.css';
 import './style.css';
+import './run-screens.ts'; // shop / event / deck-pick widgets and actions
 import { loadContent, type Content } from '../engine/content.ts';
 import { loadPlugins } from '../engine/plugins.ts';
 import { newRun } from '../engine/run.ts';
+import { makeShop, startEvent } from '../engine/run-effects.ts';
+import { Rng } from '../engine/rng.ts';
 import { parseLayoutText } from './layout.ts';
 import { App, LAYOUT_OVERRIDE_KEY } from './app.ts';
 import { installDevPanel } from './dev.ts';
@@ -23,6 +26,9 @@ export interface PlayStart {
   screen?: ScreenId;
   run?: { char: string; seed?: number };
   battle?: { encounter: string; enemies?: string[]; char: string; deck?: string[]; relics?: string[]; hp?: number };
+  /** open a shop / an event directly (editor play test) */
+  shop?: { char: string; gold?: number; floor?: number };
+  event?: { id: string; char: string; gold?: number; floor?: number };
 }
 interface LoadMsg { type: 'rlce:load'; files: Record<string, string>; urls: Record<string, string>; start?: PlayStart }
 
@@ -101,6 +107,7 @@ async function boot() {
   (window as unknown as { app: App }).app = app;
   document.getElementById('boot')?.remove();
   start(app, msg?.start);
+  (window as unknown as { rlceStart: (s: PlayStart) => void }).rlceStart = s => start(app, s);
   if (!embedded && (new URLSearchParams(location.search).has('dev') || location.hash === '#dev' || overridden)) installDevPanel(app, content.layout, overridden);
   if (embedded) parent.postMessage({ type: 'rlce:started', plugins: results }, '*');
 }
@@ -122,6 +129,26 @@ function start(app: App, s?: PlayStart) {
     app.run = run;
     beginBattle(app);
     return;
+  }
+  const placed = (char: string, gold?: number, floor = 5) => {
+    const run = newRun(c, char);
+    if (gold !== undefined) run.gold = gold;
+    const f = Math.max(0, Math.min(run.map.floors.length - 1, floor - 1));
+    const node = run.map.floors[f].find(Boolean)!;
+    run.at = { floor: f, col: node.col };
+    run.path = [{ floor: f, col: node.col }];
+    run.stats.floors = f + 1;
+    return run;
+  };
+  if (s?.shop && c.characters.has(s.shop.char)) {
+    const run = placed(s.shop.char, s.shop.gold ?? 300, s.shop.floor);
+    run.shop = makeShop(c, run, new Rng(run.seed)); run.phase = 'shop';
+    app.run = run; app.go('SHOP'); return;
+  }
+  if (s?.event && c.characters.has(s.event.char) && c.events.has(s.event.id)) {
+    const run = placed(s.event.char, s.event.gold, s.event.floor);
+    startEvent(c, run, c.events.get(s.event.id)!);
+    app.run = run; app.go('EVENT'); return;
   }
   if (s?.run && c.characters.has(s.run.char)) { app.run = newRun(c, s.run.char, s.run.seed); app.go('MAP'); return; }
   app.go(s?.screen && app.layout.screens.has(s.screen) ? s.screen : 'TITLE');

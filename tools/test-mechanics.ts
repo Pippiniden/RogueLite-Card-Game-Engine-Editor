@@ -3,6 +3,10 @@
 import { loadNodeContent } from './node-content.ts';
 import { Combat } from '../src/engine/combat.ts';
 import { registerEffect } from '../src/engine/effects.ts';
+import { newRun, enterNode, startCombat, finishCombat } from '../src/engine/run.ts';
+import { registerRunEffect, runRunEffects, makeShop, buyCard, startRemoval, resolveChoice, removalPrice, shopPrice, startEvent, eventOptions, chooseEventOption, applyPick, makeCtx } from '../src/engine/run-effects.ts';
+import { Rng } from '../src/engine/rng.ts';
+import { evalNum } from '../src/engine/expr.ts';
 import type { CardInst, CardDef, EnemyDef } from '../src/engine/types.ts';
 
 const { content: c } = await loadNodeContent();
@@ -69,6 +73,112 @@ function expect(name: string, got: unknown, want: unknown) {
   expect('docs の選択例: 2枚選ばせる', [cb.choice?.min, cb.choice?.max], [2, 2]);
   cb.choose(cb.choice!.cards.slice(0, 2).map(x => x.uid));
   expect('docs の選択例: 捨てて引く', [cb.hand.length, cb.discard.length], [handBefore - 1, 3]);
+}
+
+/* ----- shop ----- */
+{
+  const run = newRun(c, char, 5); run.gold = 500;
+  const shop = makeShop(c, run, new Rng(3)); run.shop = shop; run.phase = 'shop';
+  const S = c.rules.shop!;
+  expect('ショップ: カード 5+2 枚', shop.cards.length, S.cards + S.colorless);
+  expect('ショップ: セールは1枚', shop.cards.filter(x => x.sale).length, 1);
+  expect('ショップ: レリック3つ', shop.relics.length, 3);
+  const inRange = shop.cards.every((x, i) => { if (x.sale) return true; const [a, b] = S.cardPrice[c.cards.get(x.card.id)!.rarity]!; const k = i >= S.cards ? S.colorlessMarkup : 1; return x.price >= Math.round(a * k) && x.price <= Math.round(b * k); });
+  expect('ショップ: 値段がレアリティの範囲内', inRange, true);
+  const g = run.gold, n = run.deck.length, price = shop.cards[0].price;
+  expect('ショップ: 買える', buyCard(c, run, 0).ok, true);
+  expect('ショップ: 代金とデッキ', [run.gold, run.deck.length], [g - price, n + 1]);
+  expect('ショップ: 売り切れは買えない', buyCard(c, run, 0).ok, false);
+  run.gold = 10;
+  expect('ショップ: お金が足りない', buyCard(c, run, 1), { ok: false, reason: 'gold' });
+  run.gold = 500;
+  expect('削除: 最初は75', removalPrice(c, run), 75);
+  startRemoval(c, run);
+  expect('削除: やめると無料', [resolveChoice(c, run, []).status, run.gold, run.shop.removal.used ?? false], ['done', 500, false]);
+  startRemoval(c, run);
+  const victim = run.deck.find(x => x.id === 'strike')!;
+  resolveChoice(c, run, [victim.uid]);
+  expect('削除: 払って1枚減る', [run.gold, run.deck.includes(victim), run.shop.removal.used], [425, false, true]);
+  expect('削除: 次は100', removalPrice(c, run), 100);
+  run.relics.push('merchant_tally');
+  expect('割符で半額', shopPrice(c, run, 150), 75);
+  run.relics.push('smiling_mask');
+  expect('笑う仮面で削除50', removalPrice(c, run), 50);
+}
+/* ----- events ----- */
+const evRun = (id: string, gold = 200) => { const run = newRun(c, char, 9); run.gold = gold; run.stats.floors = 5; run.at = { floor: 4, col: run.map.floors[4].findIndex(Boolean) }; startEvent(c, run, c.events.get(id)!); return run; };
+{
+  const run = evRun('ev_gambler', 20);
+  expect('イベント: 変数 bet=50', run.event!.vars.bet, 50);
+  expect('イベント: お金が足りないと選べない', eventOptions(c, run)[0].enabled, false);
+  expect('イベント: 選べない選択肢は無効', chooseEventOption(c, run, 0).status, 'invalid');
+}
+{
+  const outcomes = new Set<string>();
+  for (let seed = 0; seed < 30; seed++) {
+    const run = evRun('ev_gambler'); run.seed = seed; run.rng.event = seed * 7919;
+    chooseEventOption(c, run, 0);
+    const page = run.event!.page;
+    outcomes.add(page);
+    if (page === 'win' && run.gold !== 200 - 50 + 120) expect('賭けに勝つと120', run.gold, 270);
+    if (page === 'lose' && run.gold !== 150) expect('賭けに負けると-50', run.gold, 150);
+  }
+  expect('イベント: 確率で両方のページに分かれる', [...outcomes].sort(), ['lose', 'win']);
+}
+{
+  const run = evRun('ev_smith');
+  const r1 = chooseEventOption(c, run, 0);
+  expect('イベント: 強化はカードを選ばせる', [r1.status, run.choice?.op], ['choice', 'upgrade']);
+  const target = run.deck.find(x => x.id === 'strike')!;
+  resolveChoice(c, run, [target.uid]);
+  expect('イベント: 選んだカードが強化され次のページへ', [target.up, run.event?.page], [true, 'forged']);
+}
+{
+  const run = evRun('ev_library');
+  chooseEventOption(c, run, 0);
+  const n = run.deck.length;
+  expect('イベント: 3枚から選ぶ', run.choice?.cards?.length, 3);
+  resolveChoice(c, run, []);
+  expect('イベント: 選ばずに済ませる', [run.deck.length, run.event?.page], [n, 'read']);
+}
+{
+  const run = evRun('ev_ambush');
+  expect('イベント: 戦闘になる', [chooseEventOption(c, run, 0).status, run.phase, run.fight?.reward], ['fight', 'battle', 'elite']);
+  const cb = startCombat(c, run); cb.start();
+  cb.enemies.forEach(e => { e.hp = 0; e.alive = false; });
+  (cb as unknown as { phase: string }).phase = 'won';
+  finishCombat(c, run, cb);
+  expect('イベントの戦闘: エリート扱いでレリック付き', [run.phase, !!run.pending?.relic], ['reward', true]);
+}
+{
+  const run = evRun('ev_spring');
+  chooseEventOption(c, run, 2);
+  expect('イベント: 立ち去るとマップへ', [run.phase, run.event], ['map', undefined]);
+}
+{
+  const saved = c.rules.unknown;
+  c.rules.unknown = { shop: 1 };
+  const run = newRun(c, char, 4);
+  enterNode(c, run, { floor: 3, col: 0, type: 'event', next: [], x: 0 });
+  expect('「？」マスがショップになる', [run.phase, run.resolved, !!run.shop], ['shop', 'shop', true]);
+  c.rules.unknown = saved;
+}
+{
+  const run = newRun(c, char, 4);
+  const ctx = makeCtx(c, run, 'relic', false);
+  applyPick(ctx, { op: 'duplicate', count: 1, prompt: '', from: 'relic' }, [run.deck[0]]);
+  expect('複製', run.deck.filter(x => x.id === run.deck[0].id).length >= 2, true);
+}
+
+{ // the run-effect example from docs/plugins.md
+  registerRunEffect('tithe', {
+    label: '所持金の割合を失う', params: { percent: { type: 'num', required: true, default: 25, label: '割合(%)' } }, text: '所持金の{percent}%を失う',
+    run(ctx, e) { const vars = { gold: ctx.run.gold, ...ctx.vars }; const n = Math.floor(ctx.run.gold * evalNum(e.percent as never, vars, 25) / 100); ctx.run.gold -= n; ctx.log.push({ t: 'gold', n: -n }); },
+  });
+  const run = newRun(c, char, 4); run.gold = 200;
+  const ctx = makeCtx(c, run, 'event', false);
+  runRunEffects(ctx, [{ op: 'tithe', percent: 25 }]);
+  expect('docs の冒険の効果の例', [run.gold, ctx.log], [150, [{ t: 'gold', n: -50 }]]);
 }
 
 console.log(fails ? `${fails} 件失敗 / ${passes} 件成功` : `すべて成功（${passes} 件）`);

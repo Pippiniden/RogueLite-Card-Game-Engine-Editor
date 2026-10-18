@@ -6,6 +6,10 @@ import { ed } from './state.ts';
 import { h, button } from './ui.ts';
 import { playtest } from './playtest.ts';
 import type { ListKind } from './project.ts';
+import type { EventDef } from '../engine/types.ts';
+import { newRun } from '../engine/run.ts';
+import { startEvent, fillText, describeRun, eventVars } from '../engine/run-effects.ts';
+import { evalCond } from '../engine/expr.ts';
 
 /* Live previews next to the form, drawn with the game's own card renderer and theme. */
 
@@ -86,6 +90,38 @@ export function preview(kind: ListKind, id: string): HTMLElement {
       const counts = new Map<string, number>(); d.deck.forEach(x => counts.set(x, (counts.get(x) ?? 0) + 1));
       box.appendChild(h('div', { class: 'pv-deck' }, [...counts].map(([cid, n]) => { const el = renderCard(c, { uid: 0, id: cid, up: false }); return h('div', { class: 'pv-deck-item' }, el, h('span', { class: 'mono' }, `×${n}`)); })));
       box.appendChild(h('div', { class: 'pv-actions' }, button('この主人公で冒険テスト', () => playtest({ run: { char: id } }), 'primary sm')));
+      break;
+    }
+    case 'events': {
+      const ev = c.events.get(id) as EventDef | undefined; if (!ev?.pages?.start) { box.appendChild(txt('ページ「start」がありません')); break; }
+      // a sample run (first character, floor 5, 120 gold) so variables and conditions show real numbers
+      const run = newRun(c, firstChar(), 1);
+      run.gold = 120; run.stats.floors = 5;
+      startEvent(c, run, ev);
+      const body = h('div', { class: 'pv-event' });
+      const tabs = h('div', { class: 'pv-tabs' });
+      const show = (pid: string) => {
+        run.event!.page = pid;
+        const pg = ev.pages[pid]; const vars = eventVars(c, run);
+        const art = c.assets.get(pg.art ?? ev.art ?? '');
+        body.replaceChildren(
+          art ? h('img', { class: 'pv-event-art', src: art, alt: '' }) : h('div', { class: 'pv-event-art empty' }, '絵なし'),
+          h('h4', null, ev.name),
+          h('div', { class: 'pv-event-text' }, fillText(c, run, pg.text ?? '').split('\n').map(l => h('p', null, l || '\u00a0'))),
+          h('div', { class: 'pv-event-opts' }, pg.options.length ? pg.options.map(o => {
+            const hidden = o.when && !evalCond(o.when as never, vars);
+            const on = !o.enableIf || evalCond(o.enableIf as never, vars);
+            const desc = o.desc !== undefined ? fillText(c, run, o.desc) : describeRun(c, o.effects, vars);
+            return h('div', { class: `pv-event-opt${on ? '' : ' off'}${hidden ? ' hid' : ''}` }, h('b', null, fillText(c, run, o.label)), desc ? h('small', null, desc) : null,
+              !on && o.disabledText ? h('small', { class: 'why' }, fillText(c, run, o.disabledText)) : null, hidden ? h('small', { class: 'why' }, '（今は表示されない）') : null,
+              o.next ? h('span', { class: 'pv-next mono' }, `→ ${o.next}`) : null);
+          }) : h('div', { class: 'pv-event-opt' }, h('b', null, c.text.ui['event.continue'] ?? '先へ進む'))));
+        tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.p === pid));
+      };
+      for (const pid of Object.keys(ev.pages)) tabs.appendChild(h('button', { type: 'button', class: 'btn sm', 'data-p': pid, on: { click: () => show(pid) } }, pid));
+      box.append(tabs, body, txt(`見本の数値: ${c.characters.get(firstChar())?.name ?? ''}・5階・120ゴールド。変数 ${Object.entries(run.event!.vars).map(([k, v]) => `${k}=${v}`).join(' ') || 'なし'}`),
+        h('div', { class: 'pv-actions' }, button('このイベントを試す', () => playtest({ event: { id, char: firstChar(), gold: 120, floor: 5 } }), 'primary sm')));
+      show('start');
       break;
     }
   }

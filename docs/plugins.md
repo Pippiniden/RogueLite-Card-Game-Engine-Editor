@@ -67,6 +67,7 @@ export default function (api) {
 | `status` / `card` | 状態・カードのID（一覧から選ぶ） | チェッカーが存在を確かめる |
 | `cardOrSelf` | カードIDか `$self`（このカード） | |
 | `target` | 受け手 | `to` に使う。`who` に解決済みの相手が入る |
+| `relic` / `encounter` / `page` | レリック・遭遇・イベントのページ（冒険の効果用） | チェッカーが存在を確かめる |
 | `effects` | 効果の入れ子 | `yield* cb.runEffects(e.x, ctx)` で実行 |
 
 `required: true` の項目が空なら、チェッカーとエディターがエラーを出します。`help` は入力欄の下に出る説明です。
@@ -129,7 +130,36 @@ api.registerEffect('discardThenDraw', {
 
 `text` に `{項目名}` を書くと値が入ります。`text.ja.json → effects` に同じ op のキーがあればそちらが優先されるので、文言は後から翻訳・差し替えできます。
 
-## 3. 画面側の拡張（ブラウザだけ）
+## 3. 冒険の効果を足す: `api.registerRunEffect(op, 定義)`
+
+イベントの選択肢や、レリックを拾った時に使う「戦闘の外の効果」も同じように足せます。エディターでは、イベントの「起きること」とレリックの「拾った時」のメニューに出ます。
+
+```js
+api.registerRunEffect('tithe', {
+  label: '所持金の割合を失う',
+  params: { percent: { type: 'num', required: true, default: 25, label: '割合(%)' } },
+  text: '所持金の{percent}%を失う',
+  run(ctx, e) {
+    const vars = { gold: ctx.run.gold, ...ctx.vars };
+    const n = Math.floor(ctx.run.gold * api.evalNum(e.percent, vars, 25) / 100);
+    ctx.run.gold -= n;
+    ctx.log.push({ t: 'gold', n: -n });   // 画面に「-n」と音が出る
+  },
+});
+```
+
+| `ctx.…` | 中身 |
+| --- | --- |
+| `run` | 冒険の状態（`gold` `hp` `maxHp` `deck` `relics` など。ここを直接変える） |
+| `c` | 全データ |
+| `rng` | 冒険用の乱数（`rng.int(a, b)` `rng.pick(配列)` `rng.next()`） |
+| `vars` | イベントの変数 |
+| `log` | 起きたことを `{ t: 'gold' \| 'hp' \| 'maxHp', n }`、`{ t: 'card', id, up }`、`{ t: 'relic', id }` などで積むと、ゲームが数字・音・知らせを出す |
+| `canAsk` | false の時（シミュレーターなど）はプレイヤーに選ばせずに決める |
+
+`run` が配列を返すと、その効果が続けて実行されます（「確率で」「もし〜なら」と同じ仕組み）。
+
+## 4. 画面側の拡張（ブラウザだけ）
 
 チェッカーやシミュレーターでは呼ばれないので、`if (api.registerFx)` で確かめてから使います。
 
@@ -144,17 +174,17 @@ api.registerWidget?.('my.turnCounter', { update(n, app) { n.el.textContent = `${
 api.registerAction?.('shout', (app, args) => { app.banner(args[0] ?? ''); return false; }); // false で画面遷移しない
 ```
 
-## 4. ほかに使えるもの
+## 5. ほかに使えるもの
 
 | `api.…` | 中身 |
 | --- | --- |
 | `version` | プラグイン API の版（いまは `1`）。互換が崩れる変更をしたら上がる |
 | `content` | 読み込んだ全データ（`content.cards.get('strike')` など） |
-| `effects` | 登録済みの全効果。既存の効果の `run` を呼んで組み合わせることもできる |
+| `effects` / `runEffects` | 登録済みの全効果（戦闘・冒険）。既存の効果の `run` を呼んで組み合わせることもできる |
 | `evalNum(式, 変数, 既定)` / `evalCond(式, 変数)` | 式の計算 |
 | `log(…)` | `[plugin パス]` 付きでコンソールに出す |
 
-## 5. 確かめ方
+## 6. 確かめ方
 
 1. `npm run check` — プラグインの読み込み失敗・必須項目の抜けが出る
 2. `npm test` — 組み込みの仕組みの自動テスト（自分のテストも `tools/test-mechanics.ts` に足せる）

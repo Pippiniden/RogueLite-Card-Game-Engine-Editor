@@ -1,5 +1,6 @@
 import type { Content } from './content.ts';
-import { EFFECTS } from './effects.ts';
+import { EFFECTS, type ParamSpec } from './effects.ts';
+import { RUN_EFFECTS } from './run-effects.ts';
 import { checkExpr } from './expr.ts';
 import type { Effect, Trigger, Modifier } from './types.ts';
 import { parseDoc, lintScreen } from '../game/qlayout-core.js';
@@ -18,12 +19,14 @@ export function validateContent(c: Content, extra: { widgets?: string[]; actions
   const err = (kind: string, id: string, msg: string) => out.push({ sev: 'error', kind, id, msg });
   const warn = (kind: string, id: string, msg: string) => out.push({ sev: 'warn', kind, id, msg });
 
+  // combat effects (cards, enemies, statuses) and run effects (events, relic pick-up) share the checks
+  const effectsIn = (reg: Record<string, { label: string; params: Record<string, ParamSpec> }>, run: boolean, pages?: string[]) => {
   const effects = (kind: string, id: string, where: string, list: Effect[] | undefined) => {
     (list || []).forEach((e, i) => {
       const at = `${where}[${i + 1}]`;
-      const op = EFFECTS[e.op];
-      if (!op) return err(kind, id, `${at}: 効果「${e.op}」は登録されていません（プラグインの読み込み忘れ？）`);
-      if (e.to !== undefined && !TARGETS.includes(String(e.to))) err(kind, id, `${at}: 対象「${e.to}」は使えません`);
+      const op = reg[e.op];
+      if (!op) return err(kind, id, `${at}: ${run ? '冒険の効果' : '効果'}「${e.op}」は登録されていません${run && EFFECTS[e.op] ? '（戦闘中だけの効果です）' : '（プラグインの読み込み忘れ？）'}`);
+      if (!run && e.to !== undefined && !TARGETS.includes(String(e.to))) err(kind, id, `${at}: 対象「${e.to}」は使えません`);
       for (const [k, spec] of Object.entries(op.params)) {
         const v = e[k];
         if (v === undefined || v === '') { if (spec.required) err(kind, id, `${at}: ${op.label} の「${spec.label}」がありません`); continue; }
@@ -31,10 +34,17 @@ export function validateContent(c: Content, extra: { widgets?: string[]; actions
         if (spec.type === 'status' && v !== '$self' && !c.statuses.has(String(v))) err(kind, id, `${at}: 状態「${v}」がありません`);
         if ((spec.type === 'card' || spec.type === 'cardOrSelf') && v !== '$self' && !c.cards.has(String(v))) err(kind, id, `${at}: カード「${v}」がありません`);
         if (spec.type === 'enum' && spec.options && !spec.options.some(([o]) => o === v)) err(kind, id, `${at} ${spec.label}: 「${v}」は選択肢にありません`);
+        if (spec.type === 'relic' && !c.relics.has(String(v))) err(kind, id, `${at}: レリック「${v}」がありません`);
+        if (spec.type === 'encounter' && !c.encounters.has(String(v))) err(kind, id, `${at}: 遭遇「${v}」がありません`);
+        if (spec.type === 'page' && pages && !pages.includes(String(v))) err(kind, id, `${at}: ページ「${v}」がありません`);
         if (spec.type === 'effects') effects(kind, id, `${at}.${k}`, v as Effect[]);
       }
     });
   };
+  return effects;
+  };
+  const effects = effectsIn(EFFECTS, false);
+  const runEffects = effectsIn(RUN_EFFECTS, true);
   const triggers = (kind: string, id: string, list: Trigger[] | undefined) => (list || []).forEach((t, i) => {
     if (!EVENTS.includes(t.on)) err(kind, id, `トリガー${i + 1}: イベント「${t.on}」はありません`);
     if (t.when) { const m = checkExpr(t.when); if (m) err(kind, id, `トリガー${i + 1} の条件: ${m}`); }
@@ -55,7 +65,31 @@ export function validateContent(c: Content, extra: { widgets?: string[]; actions
     asset('cards', d.id, d.art);
   }
   for (const d of c.statuses.values()) { triggers('statuses', d.id, d.triggers); modifiers('statuses', d.id, d.modifiers); asset('statuses', d.id, d.icon); }
-  for (const d of c.relics.values()) { triggers('relics', d.id, d.triggers); modifiers('relics', d.id, d.modifiers); asset('relics', d.id, d.icon); }
+  for (const d of c.relics.values()) { triggers('relics', d.id, d.triggers); modifiers('relics', d.id, d.modifiers); asset('relics', d.id, d.icon); runEffects('relics', d.id, '拾った時', d.onPickup); }
+  for (const ev of c.events.values()) {
+    const pages = Object.keys(ev.pages ?? {});
+    if (!ev.pages?.start) { err('events', ev.id, '最初のページ「start」がありません'); continue; }
+    const check = effectsIn(RUN_EFFECTS, true, pages);
+    asset('events', ev.id, ev.art);
+    if (ev.when) { const m = checkExpr(ev.when); if (m) err('events', ev.id, `出現条件: ${m}`); }
+    for (const [k, v] of Object.entries(ev.vars ?? {})) { const m = checkExpr(v); if (m) err('events', ev.id, `変数 ${k}: ${m}`); }
+    ev.chars?.forEach(ch => { if (!c.characters.has(ch)) err('events', ev.id, `主人公「${ch}」がありません`); });
+    const reached = new Set(['start']);
+    for (const [pid, pg] of Object.entries(ev.pages)) {
+      asset('events', ev.id, pg.art);
+      if (!pg.text) warn('events', ev.id, `ページ「${pid}」の文章が空です`);
+      pg.options.forEach((o, i) => {
+        const at = `ページ「${pid}」の選択肢${i + 1}`;
+        if (!o.label) err('events', ev.id, `${at}: ボタンの文字がありません`);
+        for (const [k, x] of [['表示条件', o.when], ['選べる条件', o.enableIf]] as const) if (x) { const m = checkExpr(x); if (m) err('events', ev.id, `${at} ${k}: ${m}`); }
+        if (o.next) { reached.add(o.next); if (!ev.pages[o.next]) err('events', ev.id, `${at}: 次のページ「${o.next}」がありません`); }
+        const walk = (l?: Effect[]) => (l ?? []).forEach(e => { if (e.op === 'goto') reached.add(String(e.page)); walk(e.then as Effect[]); walk(e.else as Effect[]); });
+        walk(o.effects);
+        check('events', ev.id, at, o.effects);
+      });
+    }
+    pages.filter(pid => !reached.has(pid)).forEach(pid => warn('events', ev.id, `ページ「${pid}」へ進む選択肢がありません`));
+  }
   for (const d of c.enemies.values()) {
     for (const [k, m] of Object.entries(d.moves)) effects('enemies', d.id, `行動「${m.name || k}」`, m.effects);
     const moves = d.ai.type === 'sequence' ? d.ai.order : [...d.ai.table.map(t => t.move), ...(d.ai.first ? [d.ai.first] : [])];
@@ -90,7 +124,10 @@ export function validateContent(c: Content, extra: { widgets?: string[]; actions
   const doc = parseDoc(c.layout);
   doc.errors.forEach(e => err('layout', '-', e));
   const screens = doc.items.filter(i => i.kind === 'screen').map(i => (i as { s: Parameters<typeof lintScreen>[0] }).s);
-  for (const id of SCREEN_IDS) if (!screens.some(s => s.id === id) && id !== 'CHARSELECT') err('layout', id, `画面 ${id} がありません`);
+  const w = c.rules.map.weights;
+  const used: Record<string, boolean> = { CHARSELECT: false, SHOP: (w.shop ?? 0) > 0 || (c.rules.unknown?.shop ?? 0) > 0, EVENT: (w.event ?? 0) > 0 };
+  for (const id of SCREEN_IDS) if (!screens.some(s => s.id === id) && used[id] !== false) err('layout', id, `画面 ${id} がありません`);
+  if ((w.event ?? 0) > 0 && !c.events.size && (c.rules.unknown?.event ?? 1) > 0) warn('events', '-', '「？」マスが出ますがイベントが1つもありません（戦闘になります）');
   const widgets = new Set([...WIDGET_NAMES, ...(extra.widgets ?? [])]);
   const actions = new Set([...ACTION_NAMES, ...(extra.actions ?? [])]);
   for (const s of screens) {

@@ -38,7 +38,7 @@ export const INTENTS: Opt[] = [
 ];
 export const ENEMY_SIZES: Opt[] = [['small', '小'], ['medium', '中'], ['large', '大'], ['boss', 'ボス']];
 export const POOLS: Opt[] = [['normal', '通常'], ['elite', 'エリート'], ['boss', 'ボス']];
-export const SCREENS: Opt[] = [['TITLE', 'タイトル'], ['CHARSELECT', '主人公選択'], ['MAP', 'マップ'], ['BATTLE', '戦闘'], ['REWARD', '報酬・宝箱'], ['REST', '焚き火'], ['RESULT', '結果']];
+export const SCREENS: Opt[] = [['TITLE', 'タイトル'], ['CHARSELECT', '主人公選択'], ['MAP', 'マップ'], ['BATTLE', '戦闘'], ['REWARD', '報酬・宝箱'], ['REST', '焚き火'], ['SHOP', 'ショップ'], ['EVENT', 'イベント（？）'], ['RESULT', '結果']];
 export const FX_KINDS: Opt[] = [['flash', '白く光る'], ['shake', '左右に揺れる'], ['lunge', '手前に迫る'], ['glow', '光の縁取り'], ['dissolve', '消える'], ['screenShake', '画面全体が揺れる'], ['vignette', '画面の縁に色'], ['fly', '上へ飛ぶ（カード）']];
 export const PORTRAIT_FACES = ['normal', 'hurt', 'pinch', 'happy'];
 export const FACE_LABELS: Record<string, string> = { normal: '通常', hurt: '被弾', pinch: 'ピンチ（HP30%以下）', happy: '勝利・回復' };

@@ -30,6 +30,12 @@ export interface UiState {
   charId: string;
   /** cards picked in a choice dialog */
   picked: Set<number>;
+  /** current tab on screens with tabs (show="tab:<name>") */
+  tab: string;
+  /** shop item being confirmed */
+  shopItem: { kind: 'card' | 'relic'; i: number } | null;
+  /** what the shopkeeper says right now */
+  shopSay: string;
 }
 
 const SAVE_KEY = 'rlce/run-v1';
@@ -59,7 +65,7 @@ export class App {
     this.stage = stage;
     this.vfx = new Vfx(content.vfx, stage);
     this.sound = new Sound(content);
-    this.ui = { open: new Set(), info: null, banner: '', face: 'normal', selected: null, pile: 'draw', busy: false, restDone: false, charId: this.playableCharacters()[0]?.id ?? '', picked: new Set() };
+    this.ui = { open: new Set(), info: null, banner: '', face: 'normal', selected: null, pile: 'draw', busy: false, restDone: false, charId: this.playableCharacters()[0]?.id ?? '', picked: new Set(), tab: 'cards', shopItem: null, shopSay: '' };
   }
 
   /** UI text from text.<lang>.json → ui, with {name} placeholders */
@@ -74,6 +80,7 @@ export class App {
     const spec = this.layout.screens.get(id);
     if (!spec) { console.error(`画面 ${id} が layout にありません`); return; }
     this.ui.open.clear(); this.ui.info = null; this.ui.selected = null; this.ui.banner = '';
+    this.ui.picked.clear(); this.ui.shopItem = null; this.ui.shopSay = ''; this.ui.tab = 'cards';
     const built = buildScreen(spec);
     this.screen?.root.remove();
     this.screen = built;
@@ -88,7 +95,9 @@ export class App {
     }
     built.root.querySelectorAll<HTMLElement>('.q-scrim').forEach(s => s.addEventListener('click', () => {
       const id = s.dataset.scrimFor!;
-      if (this.screen?.byId.get(id)?.spec.attrs.show === 'choice') return; // a choice must be answered
+      const show = this.screen?.byId.get(id)?.spec.attrs.show;
+      if (show === 'choice' || show === 'deckChoice') return; // a choice must be answered (or cancelled with its button)
+      if (show === 'shopItem') { this.ui.shopItem = null; this.refresh(); return; }
       this.close(id);
     }));
     this.refresh();
@@ -149,7 +158,10 @@ export class App {
       case 'choice': return !!this.view?.choice && !this.ui.busy;
       case 'multiChar': return this.playableCharacters().length > 1;
       case 'muted': return this.sound.muted;
-      default: return false;
+      case 'deckChoice': return !!this.run?.choice;
+      case 'deckChoiceCancel': return !!this.run?.choice?.canCancel;
+      case 'shopItem': return !!this.ui.shopItem;
+      default: return name.startsWith('tab:') ? this.ui.tab === name.slice(4) : false;
     }
   }
 

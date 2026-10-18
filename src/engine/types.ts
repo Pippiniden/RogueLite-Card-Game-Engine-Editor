@@ -118,8 +118,10 @@ export interface RelicDef {
   pools?: string[];
   modifiers?: Modifier[];
   triggers?: Trigger[];
-  /** run-level effects when picked up (gainMaxHp, heal, gainGold, addCard…) */
+  /** run-level effects when picked up (the same effects as events) */
   onPickup?: Effect[];
+  /** shop price changes while you own it */
+  shop?: { discount?: number; removalPrice?: number };
 }
 
 export type Intent = 'attack' | 'defend' | 'buff' | 'debuff' | 'attack_defend' | 'attack_debuff' | 'attack_buff' | 'defend_buff' | 'unknown' | 'sleep' | 'escape';
@@ -179,7 +181,9 @@ export interface CharacterDef {
   locked?: boolean;
 }
 
-export type NodeType = 'battle' | 'elite' | 'rest' | 'treasure' | 'boss';
+export type NodeType = 'battle' | 'elite' | 'rest' | 'treasure' | 'shop' | 'event' | 'boss';
+/** what a "?" (event) node turns into when entered */
+export type UnknownOutcome = 'event' | 'battle' | 'elite' | 'shop' | 'treasure';
 export interface Rules {
   maxHand: number;
   map: {
@@ -191,16 +195,81 @@ export interface Rules {
     weights: Partial<Record<NodeType, number>>;
     eliteMinFloor: number;
     restMinFloor: number;
+    /** first floor (0-based) each node type may appear on; overrides eliteMinFloor / restMinFloor */
+    minFloor?: Partial<Record<NodeType, number>>;
   };
+  /** "?" nodes: weights of what they turn into */
+  unknown?: Partial<Record<UnknownOutcome, number>>;
+  shop?: ShopRules;
   rewards: {
     cardChoices: number;
     rarity: Record<'normal' | 'elite' | 'boss', Partial<Record<Rarity, number>>>;
     gold: Record<'normal' | 'elite' | 'boss', [number, number]>;
     upgradedChance: number;
+    /** relic rarity weights (treasure, elite, events); missing = every relic equally likely */
+    relicRarity?: Partial<Record<RelicDef['rarity'], number>>;
   };
   rest: { healPercent: number };
   formations: Record<string, { x: number; y: number; scale?: number }[]>;
   sizes: Record<EnemySize, number>;
+}
+
+export interface ShopRules {
+  /** cards from the character's own pools, and from "colorless" */
+  cards: number;
+  colorless: number;
+  /** rarity weights of the shop's cards */
+  rarity: Partial<Record<Rarity, number>>;
+  /** price range per card rarity (gold) */
+  cardPrice: Partial<Record<Rarity, [number, number]>>;
+  /** colorless cards cost this much more (1.2 = +20%) */
+  colorlessMarkup: number;
+  /** how many cards are on sale, and the price factor (0.5 = half price) */
+  sale: { count: number; factor: number };
+  relics: number;
+  relicPrice: Partial<Record<RelicDef['rarity'], [number, number]>>;
+  /** card removal: first price, and how much it goes up after each use */
+  removal: { price: number; step: number };
+}
+
+/* ----- events ("?" rooms) ----- */
+export interface EventOption {
+  label: string;
+  /** shown under the label; empty = generated from the effects */
+  desc?: string;
+  /** hide the option unless this is true */
+  when?: string;
+  /** show the option greyed out unless this is true */
+  enableIf?: string;
+  disabledText?: string;
+  /** run effects (gainGold, removeCards, gainRelic, fight, chance, goto…) */
+  effects?: Effect[];
+  /** page to show after the effects; none = the event ends */
+  next?: string;
+}
+export interface EventPage {
+  text: string;
+  /** art for this page (falls back to the event art) */
+  art?: string;
+  options: EventOption[];
+}
+export interface EventDef {
+  id: string;
+  name: string;
+  art?: string;
+  minFloor?: number;
+  maxFloor?: number;
+  weight?: number;
+  /** only for these characters (empty = everyone) */
+  chars?: string[];
+  /** extra condition, e.g. "gold >= 50" */
+  when?: string;
+  /** can appear again in the same run */
+  repeatable?: boolean;
+  /** values fixed when the event starts, usable in expressions and text as {name}: { "cost": "floor(maxHp * 0.1)" } */
+  vars?: Record<string, string | number>;
+  /** must contain "start" */
+  pages: Record<string, EventPage>;
 }
 
 export interface VfxStep { fx: string; [k: string]: unknown }
@@ -260,7 +329,7 @@ export interface PackManifest {
   /** JavaScript modules that register new effects, fx, widgets or actions */
   plugins?: string[];
 }
-export type ContentKind = 'cards' | 'statuses' | 'relics' | 'enemies' | 'encounters' | 'characters' | 'rules' | 'vfx' | 'theme' | 'text' | 'audio';
+export type ContentKind = 'cards' | 'statuses' | 'relics' | 'enemies' | 'encounters' | 'characters' | 'events' | 'rules' | 'vfx' | 'theme' | 'text' | 'audio';
 
 /* ===== Runtime state ===== */
 
@@ -313,6 +382,34 @@ export type CombatEvent =
   | { t: 'choice'; prompt: string }
   | { t: 'end'; result: 'won' | 'lost' };
 
+export interface ShopState {
+  cards: { card: CardInst; price: number; sold?: boolean; sale?: boolean }[];
+  relics: { id: string; price: number; sold?: boolean }[];
+  removal: { price: number; used?: boolean };
+}
+export interface EventState {
+  id: string;
+  page: string;
+  vars: Record<string, number>;
+  /** where the current option leads (set by "next" or a goto effect; null = the event ends) */
+  next?: string | null;
+}
+export type DeckChoiceOp = 'remove' | 'upgrade' | 'transform' | 'duplicate' | 'take';
+export interface DeckChoice {
+  op: DeckChoiceOp;
+  count: number;
+  prompt: string;
+  /** cards offered (op "take"); otherwise the deck is shown */
+  cards?: CardInst[];
+  filter?: string;
+  canCancel?: boolean;
+  /** gold to pay when confirmed (shop removal) */
+  price?: number;
+  from: 'shop' | 'event' | 'relic';
+  /** effects still to run after the pick */
+  then?: Effect[];
+}
+
 export interface MapNode { floor: number; col: number; type: NodeType; next: number[]; x: number }
 export interface MapData { floors: (MapNode | null)[][]; boss: MapNode }
 
@@ -328,10 +425,21 @@ export interface RunState {
   map: MapData;
   at: { floor: number; col: number } | null;
   path: { floor: number; col: number }[];
-  rng: { map: number; battle: number; reward: number; ai: number };
+  rng: { map: number; battle: number; reward: number; ai: number; event?: number };
   nextUid: number;
-  phase: 'map' | 'battle' | 'reward' | 'rest' | 'treasure' | 'won' | 'lost';
+  phase: 'map' | 'battle' | 'reward' | 'rest' | 'treasure' | 'shop' | 'event' | 'won' | 'lost';
   pending?: { gold: number; cards: CardInst[]; relic?: string; cardTaken?: boolean; goldTaken?: boolean; relicTaken?: boolean };
   encounter?: string;
+  /** what the current "?" node turned into */
+  resolved?: UnknownOutcome;
+  /** a fight started by an event: which reward it gives */
+  fight?: { reward: 'normal' | 'elite' | 'none' };
+  shop?: ShopState;
+  event?: EventState;
+  /** a pending pick from the deck (or from offered cards) */
+  choice?: DeckChoice;
+  /** how many times a card was removed at a shop (raises the price) */
+  removals?: number;
+  seenEvents?: string[];
   stats: { floors: number; kills: number; elites: number; startedAt: string };
 }

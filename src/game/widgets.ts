@@ -1,6 +1,6 @@
 import type { App } from './app.ts';
 import type { Node } from './layout.ts';
-import type { WidgetName } from './registry-names.ts';
+import type { WidgetName, RunWidgetName } from './registry-names.ts';
 import type { CardInst, Combatant, MapNode } from '../engine/types.ts';
 import { canUpgrade } from '../engine/content.ts';
 import { currentNode, reachable, enterNode, takeGold, takeRelic, takeCard, upgradeCard } from '../engine/run.ts';
@@ -16,7 +16,7 @@ import { beginBattle, selectCard, playCard, tapEnemy } from './battle.ts';
 
 export interface Widget { mount?(n: Node, app: App): void; update(n: Node, app: App): void }
 
-const esc = (s: string) => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+export const esc = (s: string) => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 /** set innerHTML only when the content signature changed */
 export function paint(el: HTMLElement, sig: string, draw: () => void) { if (el.dataset.sig === sig) return; el.dataset.sig = sig; draw(); }
 const text = (fn: (app: App, n: Node) => string): Widget => ({ update(n, app) { const t = fn(app, n); if (n.el.textContent !== t) n.el.textContent = t; } });
@@ -66,7 +66,7 @@ function statusIcons(app: App, el: HTMLElement, sts: Record<string, number>, onT
   });
 }
 
-function cardList(app: App, el: HTMLElement, cards: CardInst[], sig: string, onTap: (c: CardInst) => void, long?: (c: CardInst) => void, picked?: Set<number>) {
+export function cardList(app: App, el: HTMLElement, cards: CardInst[], sig: string, onTap: (c: CardInst) => void, long?: (c: CardInst) => void, picked?: Set<number>) {
   paint(el, sig, () => {
     el.innerHTML = '';
     el.classList.add('card-grid');
@@ -79,7 +79,7 @@ function cardList(app: App, el: HTMLElement, cards: CardInst[], sig: string, onT
     }
   });
 }
-const sortCards = (app: App, list: CardInst[]) => [...list].sort((a, b) => {
+export const sortCards = (app: App, list: CardInst[]) => [...list].sort((a, b) => {
   const da = app.content.cards.get(a.id), db = app.content.cards.get(b.id);
   const order = ['attack', 'skill', 'power', 'status', 'curse'];
   return order.indexOf(da?.type ?? '') - order.indexOf(db?.type ?? '') || (da?.name ?? '').localeCompare(db?.name ?? '') || Number(b.up) - Number(a.up);
@@ -96,6 +96,8 @@ function stepTo(app: App, node: MapNode) {
   app.save();
   if (run.phase === 'battle') beginBattle(app);
   else if (run.phase === 'rest') { app.ui.restDone = false; app.go('REST'); }
+  else if (run.phase === 'shop') app.go('SHOP');
+  else if (run.phase === 'event') app.go('EVENT');
   else app.go('REWARD');
 }
 function drawMap(n: Node, app: App) {
@@ -293,7 +295,7 @@ function pileButton(pile: 'draw' | 'discard' | 'exhaust'): Widget {
 }
 
 /* ----- registry ----- */
-const BUILTIN: Record<WidgetName, Widget> = {
+const BUILTIN: Record<Exclude<WidgetName, RunWidgetName>, Widget> = {
   'title.bg': { mount(n) { n.el.classList.add('title-bg'); }, update() {} },
   'title.name': text(app => app.t('game.title')),
   'title.sub': text(app => app.t('game.subtitle')),
@@ -472,5 +474,5 @@ const BUILTIN: Record<WidgetName, Widget> = {
 };
 
 /** every widget the layout can bind to (built-in + plugins) */
-export const WIDGETS: Record<string, Widget> = { ...BUILTIN };
+export const WIDGETS: Record<string, Widget> = { ...BUILTIN }; // run-screens.ts adds the shop / event widgets
 export function registerWidget(bind: string, w: Widget) { WIDGETS[bind] = w; }

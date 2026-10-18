@@ -15,6 +15,7 @@ export type ParamType =
   | 'enum'       // one of options
   | 'status' | 'card' | 'cardOrSelf'
   | 'target'
+  | 'relic' | 'encounter' | 'page'   // run effects: relic id, encounter id, event page id
   | 'effects';   // nested effect list
 
 export interface ParamSpec {

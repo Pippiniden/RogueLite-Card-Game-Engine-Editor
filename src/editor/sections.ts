@@ -6,6 +6,7 @@ import { SKIN_PARTS, WIDGET_INFO, ACTION_INFO } from '../game/registry-names.ts'
 import { parseDoc, exportText, type QLScreen, type QLProject } from '../game/qlayout-core.js';
 import { Vfx } from '../game/vfx.ts';
 import { applyThemeVars } from './preview.ts';
+import { playtest } from './playtest.ts';
 import type { SkinDef } from '../engine/types.ts';
 import type { ObjKind } from './project.ts';
 
@@ -27,6 +28,7 @@ const page = (title: string, intro: string, ...body: (Node | null)[]) => h('div'
 const card = (title: string, ...body: (Node | null | string)[]) => h('section', { class: 'box' }, h('h3', null, title), ...body);
 
 /* ----- rules ----- */
+const NODE_KINDS: [string, string][] = [['battle', '戦闘'], ['event', '？'], ['elite', 'エリート'], ['rest', '焚き火'], ['shop', 'ショップ']];
 export function rulesSection(): HTMLElement {
   const R = 'rules' as const;
   const form = () => {
@@ -49,6 +51,7 @@ export function rulesSection(): HTMLElement {
     return box;
   };
   const rarity = (kind: string) => h('div', { class: 'inline' }, ['common', 'uncommon', 'rare'].map(r => h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, r), numIn(R, ['rewards', 'rarity', kind, r], { min: 0 }))));
+  const pair = (path: string[]) => { const g = (val(R, path) as number[]) ?? [0, 0]; return h('span', { class: 'range' }, input(g[0], v => { g[0] = Number(v); put(R, path, [...g]); }, { type: 'number', class: 'mono num' }), '〜', input(g[1], v => { g[1] = Number(v); put(R, path, [...g]); }, { type: 'number', class: 'mono num' })); };
   const gold = (kind: string) => { const g = (val(R, ['rewards', 'gold', kind]) as number[]) ?? [0, 0]; return h('span', { class: 'range' }, input(g[0], v => { g[0] = Number(v); put(R, ['rewards', 'gold', kind], g); }, { type: 'number', class: 'mono num' }), '〜', input(g[1], v => { g[1] = Number(v); put(R, ['rewards', 'gold', kind], g); }, { type: 'number', class: 'mono num' })); };
   return page('ルール', '冒険と戦闘の数値。ここで変えた値は次のプレイから効きます。',
     card('戦闘', h('div', { class: 'fields' }, row('手札の上限', numIn(R, ['maxHand'], { min: 1 })))),
@@ -60,12 +63,26 @@ export function rulesSection(): HTMLElement {
       row('焚き火だけの階', input(String(val(R, ['map', 'restFloor']) ?? 'last'), v => put(R, ['map', 'restFloor'], v === 'last' ? 'last' : Number(v)), { class: 'mono' }), '"last" ならボスの直前'),
       row('エリートが出る最初の階', numIn(R, ['map', 'eliteMinFloor'])),
       row('焚き火が出る最初の階', numIn(R, ['map', 'restMinFloor'])),
-      row('ノードの出やすさ', h('div', { class: 'inline' }, ['battle', 'elite', 'rest'].map(k => h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, ({ battle: '戦闘', elite: 'エリート', rest: '焚き火' } as Obj)[k] as string), numIn(R, ['map', 'weights', k], { min: 0 }))))))),
+      row('ノードの出やすさ', h('div', { class: 'inline' }, NODE_KINDS.map(([k, l]) => h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, l), numIn(R, ['map', 'weights', k], { min: 0 }))))),
+      row('出る最初の階', h('div', { class: 'inline' }, NODE_KINDS.filter(([k]) => k !== 'battle').map(([k, l]) => h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, l), numIn(R, ['map', 'minFloor', k], { min: 0, placeholder: k === 'elite' ? String(val(R, ['map', 'eliteMinFloor']) ?? 0) : k === 'rest' ? String(val(R, ['map', 'restMinFloor']) ?? 0) : '0' })))), '0 = 1階目。1階目はいつも戦闘'),
+      row('「？」マスの中身', h('div', { class: 'inline' }, [['event', 'イベント'], ['battle', '戦闘'], ['elite', 'エリート'], ['shop', 'ショップ'], ['treasure', '宝箱']].map(([k, l]) => h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, l), numIn(R, ['unknown', k], { min: 0 })))), '入った時にこの比で決まる。イベントが尽きたら戦闘'))),
+    card('ショップ', h('div', { class: 'fields' },
+      row('カードの数', numIn(R, ['shop', 'cards'], { min: 0 }), 'この主人公のプールから'),
+      row('共通カードの数', numIn(R, ['shop', 'colorless'], { min: 0 }), 'colorless プールから'),
+      row('カードのレアリティ比', h('div', { class: 'inline' }, ['common', 'uncommon', 'rare'].map(k => h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, k), numIn(R, ['shop', 'rarity', k], { min: 0 }))))),
+      row('カードの値段', h('div', { class: 'inline' }, ['common', 'uncommon', 'rare'].map(k => h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, k), pair(['shop', 'cardPrice', k]))))),
+      row('共通カードの割増', numIn(R, ['shop', 'colorlessMarkup'], { step: 0.05, min: 0 }), '1.2 で2割増し'),
+      row('セール', h('div', { class: 'inline' }, h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, '枚数'), numIn(R, ['shop', 'sale', 'count'], { min: 0 })), h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, '値段の倍率'), numIn(R, ['shop', 'sale', 'factor'], { step: 0.05, min: 0 })))),
+      row('レリックの数', numIn(R, ['shop', 'relics'], { min: 0 }), 'レアリティ「ショップ」のレリックはここにだけ出る'),
+      row('レリックの値段', h('div', { class: 'inline' }, ['common', 'uncommon', 'rare', 'shop'].map(k => h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, k), pair(['shop', 'relicPrice', k]))))),
+      row('カード削除', h('div', { class: 'inline' }, h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, '最初の料金'), numIn(R, ['shop', 'removal', 'price'], { min: 0 })), h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, '使うたびに上がる額'), numIn(R, ['shop', 'removal', 'step'], { min: 0 })))),
+      row('', button('▶ ショップを試す', () => playtest({ shop: { char: ed.project.ids('characters')[0] ?? '', gold: 300 } }), 'sm')))),
     card('報酬', h('div', { class: 'fields' },
       row('カードの候補数', numIn(R, ['rewards', 'cardChoices'], { min: 1 })),
       row('強化済みで出る確率', numIn(R, ['rewards', 'upgradedChance'], { step: 0.01, min: 0, max: 1 })),
       row('通常戦のレアリティ比', rarity('normal')), row('エリート戦のレアリティ比', rarity('elite')), row('ボス戦のレアリティ比', rarity('boss')),
-      row('通常戦のゴールド', gold('normal')), row('エリート戦のゴールド', gold('elite')), row('ボス戦のゴールド', gold('boss')))),
+      row('通常戦のゴールド', gold('normal')), row('エリート戦のゴールド', gold('elite')), row('ボス戦のゴールド', gold('boss')),
+      row('レリックのレアリティ比', h('div', { class: 'inline' }, ['common', 'uncommon', 'rare'].map(k => h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, k), numIn(R, ['rewards', 'relicRarity', k], { min: 0 })))), '宝箱・エリート・イベントのレリック。空なら全部同じ確率'))),
     card('焚き火', h('div', { class: 'fields' }, row('休むと回復する割合(%)', numIn(R, ['rest', 'healPercent'], { min: 0, max: 100 })))),
     card('敵の大きさ（敵の配置領域の高さに対する割合）', h('div', { class: 'inline' }, ['small', 'medium', 'large', 'boss'].map(k => h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, k), numIn(R, ['sizes', k], { step: 0.02 }))))),
     card('陣形（敵の足元の位置。x・y は敵の配置領域の 0〜1）', form()));
@@ -155,7 +172,8 @@ const SPEC: Record<string, { label: string; w?: number; h?: number; ratio?: numb
   relic: { label: 'レリック', w: 128, h: 128, note: '128×128 透過' },
   intent: { label: '敵の予告', w: 128, h: 128, note: '128×128 透過' },
   node: { label: 'マップのノード', w: 128, h: 128, note: '128×128 透過' },
-  scene: { label: '場面の絵', note: '400×400 透過' },
+  scene: { label: '場面の絵', note: '400×400 透過（焚き火・店主など）' },
+  event: { label: 'イベントの絵', w: 780, h: 440, note: '780×440（横長）・下20%は文字側へ溶ける' },
   bg: { label: '背景', w: 780, h: 1688, note: '780×1688（@2x）・上94px/下68px/左右10%は隠れることがある' },
   ui: { label: 'UIスキン', note: '9スライス・@2x（docs/asset-spec.md）' },
   se: { label: '効果音', audio: true, note: 'm4a/mp3・2秒以内' },

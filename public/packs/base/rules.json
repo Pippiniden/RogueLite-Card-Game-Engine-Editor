@@ -3,8 +3,20 @@
   "map": {
     "floors": 12, "width": 7, "paths": 6,
     "restFloor": "last", "treasureFloor": 6,
-    "weights": { "battle": 56, "elite": 14, "rest": 14 },
-    "eliteMinFloor": 4, "restMinFloor": 4
+    "weights": { "battle": 45, "event": 22, "elite": 12, "rest": 12, "shop": 6 },
+    "eliteMinFloor": 4, "restMinFloor": 4,
+    "minFloor": { "event": 1, "shop": 2 }
+  },
+  "unknown": { "event": 85, "battle": 10, "shop": 3, "treasure": 2 },
+  "shop": {
+    "cards": 5, "colorless": 2,
+    "rarity": { "common": 54, "uncommon": 37, "rare": 9 },
+    "cardPrice": { "common": [45, 55], "uncommon": [68, 82], "rare": [135, 165] },
+    "colorlessMarkup": 1.2,
+    "sale": { "count": 1, "factor": 0.5 },
+    "relics": 3,
+    "relicPrice": { "common": [143, 157], "uncommon": [238, 262], "rare": [285, 315], "shop": [143, 157] },
+    "removal": { "price": 75, "step": 25 }
   },
   "rewards": {
     "cardChoices": 3,
@@ -14,7 +26,8 @@
       "boss":   { "rare": 100 }
     },
     "gold": { "normal": [10, 20], "elite": [25, 35], "boss": [95, 105] },
-    "upgradedChance": 0.05
+    "upgradedChance": 0.05,
+    "relicRarity": { "common": 50, "uncommon": 33, "rare": 17 }
   },
   "rest": { "healPercent": 30 },
   "formations": {

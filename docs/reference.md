@@ -249,7 +249,7 @@
 | `threshold` | num | `25` | HP割合のしきい値(%) |
 | `to` | target |  | 対象 |
 
-`*` は必須。型の意味: num=数値か式 / int=整数 / bool=真偽 / string=文字 / cond=条件式 / enum=選択肢 / status=状態ID / card=カードID / cardOrSelf=カードIDか `$self` / target=受け手 / effects=効果の入れ子
+`*` は必須。型の意味: num=数値か式 / int=整数 / bool=真偽 / string=文字 / cond=条件式 / enum=選択肢 / status=状態ID / card=カードID / cardOrSelf=カードIDか `$self` / target=受け手 / relic=レリックID / encounter=遭遇ID / page=イベントのページ / effects=効果の入れ子
 
 ### 受け手（to）
 
@@ -261,6 +261,169 @@
 | `randomEnemy` | ランダムな相手 |
 | `allAllies` | 味方全員 |
 | `all` | 全員 |
+
+## 冒険の効果（イベント・レリックを拾った時）
+
+イベントの選択肢の `effects` と、レリックの `onPickup` に並べる部品です。戦闘の外で、デッキ・HP・ゴールド・レリックを変えます。
+
+```json
+{ "label": "{bet}ゴールド賭ける", "enableIf": "gold >= bet", "effects": [
+  { "op": "loseGold", "amount": "bet" },
+  { "op": "chance", "percent": 45, "then": [{ "op": "gainGold", "amount": "prize" }, { "op": "goto", "page": "win" }], "else": [{ "op": "goto", "page": "lose" }] }
+] }
+```
+
+- 式で使える変数: `gold` `hp` `maxHp` `hpPct` `floor`（今の階、1始まり）`deck` `deck.<種類>` `deck.upgradable` `relics` `relic.<ID>`（持っていれば1）`removals`（ショップで削除した回数）と、イベントの `vars`。
+- カードを選ばせる効果（取り除く・強化・変化・複製・見せて選ばせる）は画面で選ぶまで待ち、残りの効果はそのあとに続きます。
+
+### HP・ゴールド
+
+#### `gainGold` — ゴールドを得る
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `amount` * | num |  | 量 |
+
+#### `loseGold` — ゴールドを失う
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `amount` * | num |  | 量（所持金より多ければ0になる） |
+
+#### `heal` — HPを回復
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `amount` * | num |  | 量（例: maxHp * 0.25） |
+
+#### `loseHp` — HPを失う
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `amount` * | num |  | 量（冒険中はHP1で止まる） |
+
+#### `gainMaxHp` — 最大HPを増やす
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `amount` * | num |  | 量 |
+
+#### `loseMaxHp` — 最大HPを減らす
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `amount` * | num |  | 量 |
+
+### デッキ
+
+#### `addCard` — カードをデッキに加える
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `card` * | card |  | カード |
+| `count` | num | `1` | 枚数 |
+| `upgraded` | bool | `false` | 強化済み |
+
+#### `addRandomCard` — ランダムなカードを加える
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `count` | num | `1` | 枚数 |
+| `rarity` | enum | `""` | レアリティ `""`=ふつうの出やすさで / `common`=コモン / `uncommon`=アンコモン / `rare`=レア |
+| `type` | enum | `""` | 種類 `""`=どれでも / `attack`=アタック / `skill`=スキル / `power`=パワー / `status`=状態異常 / `curse`=呪い |
+| `colorless` | bool | `false` | 共通（colorless）から |
+| `upgraded` | bool | `false` | 強化済み |
+
+#### `offerCards` — カードを見せて1枚選ばせる
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `count` | num | `3` | 候補の数 |
+| `rarity` | enum | `""` | レアリティ `""`=ふつうの出やすさで / `common`=コモン / `uncommon`=アンコモン / `rare`=レア |
+| `type` | enum | `""` | 種類 `""`=どれでも / `attack`=アタック / `skill`=スキル / `power`=パワー / `status`=状態異常 / `curse`=呪い |
+| `colorless` | bool | `false` | 共通（colorless）から |
+| `upgraded` | bool | `false` | 強化済み |
+| `canSkip` | bool | `true` | 選ばずに済ませられる |
+
+#### `removeCards` — デッキからカードを取り除く
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `count` | num | `1` | 枚数 |
+| `select` | enum | `"choose"` | 選び方 `choose`=プレイヤーが選ぶ / `random`=ランダム |
+| `filter` | enum | `""` | 種類 `""`=どれでも / `attack`=アタック / `skill`=スキル / `power`=パワー / `status`=状態異常 / `curse`=呪い |
+
+#### `upgradeCards` — デッキのカードを強化
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `count` | num | `1` | 枚数 |
+| `select` | enum | `"choose"` | 選び方 `choose`=プレイヤーが選ぶ / `random`=ランダム |
+| `filter` | enum | `""` | 種類 `""`=どれでも / `attack`=アタック / `skill`=スキル / `power`=パワー / `status`=状態異常 / `curse`=呪い |
+
+#### `transformCards` — カードを別のカードに変える
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `count` | num | `1` | 枚数 |
+| `select` | enum | `"choose"` | 選び方 `choose`=プレイヤーが選ぶ / `random`=ランダム |
+| `filter` | enum | `""` | 種類 `""`=どれでも / `attack`=アタック / `skill`=スキル / `power`=パワー / `status`=状態異常 / `curse`=呪い |
+
+#### `duplicateCard` — カードを複製する
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `count` | num | `1` | 枚数 |
+| `select` | enum | `"choose"` | 選び方 `choose`=プレイヤーが選ぶ / `random`=ランダム |
+| `filter` | enum | `""` | 種類 `""`=どれでも / `attack`=アタック / `skill`=スキル / `power`=パワー / `status`=状態異常 / `curse`=呪い |
+
+### レリック
+
+#### `gainRelic` — レリックを得る
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `relic` | relic |  | レリック（空ならランダム） |
+| `rarity` | enum | `""` | ランダムの時のレアリティ `""`=ふつうの出やすさで / `common`=コモン / `uncommon`=アンコモン / `rare`=レア / `boss`=ボス / `shop`=ショップ |
+
+#### `loseRelic` — レリックを失う
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `relic` | relic |  | レリック（空なら持っている中からランダム（初期レリックは除く）） |
+
+### 組み合わせ・進行
+
+#### `if` — もし〜なら
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `cond` * | cond |  | 条件（例: gold >= 100） |
+| `then` | effects |  | なら |
+| `else` | effects |  | でなければ |
+
+#### `chance` — 確率で
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `percent` * | num | `50` | 確率(%) |
+| `then` | effects |  | 当たり |
+| `else` | effects |  | 外れ |
+
+#### `goto` — イベントのページへ進む
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `page` * | page |  | ページ |
+
+#### `endEvent` — イベントを終える
+
+#### `fight` — 戦闘を始める
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `encounter` * | encounter |  | 遭遇 |
+| `reward` | enum | `"normal"` | 勝った時の報酬 `normal`=通常戦と同じ / `elite`=エリート戦と同じ（レリック付き） / `none`=なし |
 
 ## トリガー（triggers）
 
@@ -474,7 +637,7 @@ card.<変数名>（カードの変数）/ card.upgraded / card.cost
 
 ## 画面・部品・アクション
 
-画面ID: `TITLE` `CHARSELECT` `MAP` `BATTLE` `REWARD` `REST` `RESULT`
+画面ID: `TITLE` `CHARSELECT` `MAP` `BATTLE` `REWARD` `REST` `SHOP` `EVENT` `RESULT`
 
 ### 部品（bind）
 
@@ -532,6 +695,24 @@ card.<変数名>（カードの変数）/ card.upgraded / card.cost
 | `result.portrait` | 結果画面の顔 |
 | `result.title` | 勝敗 |
 | `result.stats` | 記録 |
+| `shop.merchant` | 店主の絵 |
+| `shop.title` | ショップの見出し |
+| `shop.say` | 店主のひとこと（買うと変わる） |
+| `shop.tab.cards` | 「カード」タブ |
+| `shop.tab.other` | 「レリック・サービス」タブ |
+| `shop.cards` | 売り物のカード（値札つき。タップで確認） |
+| `shop.relics` | 売り物のレリック（タップで確認） |
+| `shop.removal` | カード削除サービス |
+| `shop.preview` | 購入確認の中身（カードかレリック） |
+| `shop.buy` | 購入ボタン |
+| `event.art` | イベントの絵 |
+| `event.name` | イベントの名前 |
+| `event.text` | イベントの文章 |
+| `event.options` | イベントの選択肢（ボタンの列） |
+| `deckpick.title` | デッキから選ぶ時の案内文 |
+| `deckpick.cards` | 選べるカード |
+| `deckpick.confirm` | 決定ボタン |
+| `deckpick.cancel` | やめる／選ばないボタン |
 
 ### アクション（on="tap: …"）
 
@@ -550,6 +731,12 @@ card.<変数名>（カードの変数）/ card.upgraded / card.cost
 | `leaveNode` | マップへ戻る |
 | `restHeal` | 焚き火で休む |
 | `toggleSound` | 音のオン・オフ |
+| `shopTab` | ショップのタブを切り替える（shopTab(cards\|other)） |
+| `shopBuy` | 確認中の品物を買う |
+| `shopCancel` | 購入確認を閉じる |
+| `shopRemoval` | カード削除を始める |
+| `confirmDeckChoice` | デッキから選んだカードで決定 |
+| `cancelDeckChoice` | デッキからの選択をやめる（選ばない） |
 
 ### UIスキンの部品（skin）
 
@@ -622,6 +809,8 @@ card.<変数名>（カードの変数）/ card.upgraded / card.cost
 | `MAP` | マップ |
 | `REWARD` | 報酬・宝箱 |
 | `REST` | 焚き火 |
+| `SHOP` | ショップ |
+| `EVENT` | イベント（？） |
 | `RESULT` | 結果 |
 | `battle` | 通常戦闘 |
 | `elite` | エリート戦 |

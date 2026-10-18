@@ -14,7 +14,7 @@ for (const [k, url] of c.assets) {
 }
 
 const added = plugins.flatMap(p => p.added);
-console.log(`パック: ${c.packs.map(p => p.id).join(', ')} — カード${c.cards.size} 敵${c.enemies.size} 遭遇${c.encounters.size} レリック${c.relics.size} 状態${c.statuses.size} 主人公${c.characters.size} 素材${c.assets.size}${added.length ? ` · プラグイン効果 ${added.join(', ')}` : ''}`);
+console.log(`パック: ${c.packs.map(p => p.id).join(', ')} — カード${c.cards.size} 敵${c.enemies.size} 遭遇${c.encounters.size} レリック${c.relics.size} 状態${c.statuses.size} 主人公${c.characters.size} イベント${c.events.size} 素材${c.assets.size}${added.length ? ` · プラグイン効果 ${added.join(', ')}` : ''}`);
 for (const i of issues.filter(x => x.sev === 'warn')) console.log(`  警告 [${i.kind} ${i.id}] ${i.msg}`);
 const errors = issues.filter(x => x.sev === 'error');
 for (const i of errors) console.log(`  エラー [${i.kind} ${i.id}] ${i.msg}`);

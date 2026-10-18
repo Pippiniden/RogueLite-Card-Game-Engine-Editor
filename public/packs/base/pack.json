@@ -1,7 +1,7 @@
 {
   "id": "base",
   "name": "基本パック",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "files": {
     "cards": "cards.json",
     "statuses": "statuses.json",
@@ -9,6 +9,7 @@
     "enemies": "enemies.json",
     "encounters": "encounters.json",
     "characters": "characters.json",
+    "events": "events.json",
     "rules": "rules.json",
     "vfx": "vfx.json",
     "theme": "theme.json",

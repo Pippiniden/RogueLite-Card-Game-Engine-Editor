@@ -67,15 +67,70 @@
     "which.hand": "手札のカード",
     "which.handAll": "手札のすべてのカード",
     "duration.turn": "このターン",
-    "duration.combat": "この戦闘中"
+    "duration.combat": "この戦闘中",
+    "shop.title": "行商人の店",
+    "shop.greeting": "いらっしゃい。ゆっくり見ていきな。",
+    "shop.thanks": "まいど！",
+    "shop.poor": "お金が足りないよ。",
+    "shop.afterRemoval": "きれいさっぱり、だろう？",
+    "shop.tab.cards": "カード",
+    "shop.tab.other": "レリック・サービス",
+    "shop.sold": "売り切れ",
+    "shop.sale": "セール",
+    "shop.relicsTitle": "レリック",
+    "shop.serviceTitle": "サービス",
+    "shop.removal": "カードを取り除く",
+    "shop.removalDesc": "デッキからカードを1枚取り除く",
+    "shop.removalUsed": "今日はもう受け付けていない",
+    "shop.buy": "{price}ゴールドで買う",
+    "shop.cantBuy": "ゴールドが足りない（{price}）",
+    "shop.cancel": "やめる",
+    "shop.leave": "店を出る",
+    "event.continue": "先へ進む",
+    "choice.run.remove": "取り除くカードを選ぶ",
+    "choice.run.removeShop": "取り除くカードを選ぶ",
+    "choice.run.upgrade": "強化するカードを選ぶ",
+    "choice.run.transform": "別のカードに変えるカードを選ぶ",
+    "choice.run.duplicate": "複製するカードを選ぶ",
+    "choice.run.take": "デッキに加えるカードを1枚選ぶ",
+    "deckpick.confirm": "決定（{n}/{max}）",
+    "deckpick.confirmPrice": "{price}ゴールドで取り除く",
+    "deckpick.cancel": "やめる",
+    "deckpick.skip": "選ばない",
+    "log.gold": "{n}ゴールド",
+    "log.hp": "HP {n}",
+    "log.maxHp": "最大HP {n}",
+    "log.card": "{name}を加えた",
+    "log.remove": "{name}を取り除いた",
+    "log.upgrade": "{name}を強化した",
+    "log.transform": "{from}が{to}に変わった",
+    "log.relic": "{name}を手に入れた"
   },
   "keywords": {
-    "exhaust": { "name": "廃棄", "desc": "使うとこの戦闘の間は除外される" },
-    "ethereal": { "name": "エセリアル", "desc": "ターン終了時に手札にあると廃棄される" },
-    "retain": { "name": "保留", "desc": "ターン終了時に捨て札にならない" },
-    "innate": { "name": "天賦", "desc": "戦闘開始時に必ず手札に来る" },
-    "unplayable": { "name": "使用不可", "desc": "このカードは使えない" },
-    "X": { "name": "X", "desc": "残りのエネルギーをすべて使い、その量が X になる" }
+    "exhaust": {
+      "name": "廃棄",
+      "desc": "使うとこの戦闘の間は除外される"
+    },
+    "ethereal": {
+      "name": "エセリアル",
+      "desc": "ターン終了時に手札にあると廃棄される"
+    },
+    "retain": {
+      "name": "保留",
+      "desc": "ターン終了時に捨て札にならない"
+    },
+    "innate": {
+      "name": "天賦",
+      "desc": "戦闘開始時に必ず手札に来る"
+    },
+    "unplayable": {
+      "name": "使用不可",
+      "desc": "このカードは使えない"
+    },
+    "X": {
+      "name": "X",
+      "desc": "残りのエネルギーをすべて使い、その量が X になる"
+    }
   },
   "effects": {
     "damage": "{amount}ダメージを与える",
@@ -118,14 +173,68 @@
     "replayCard": "もう一度使う",
     "repeat": "{times}回: {effects}",
     "if": "{cond}なら{then}",
-    "if.else": "{cond}なら{then}。そうでなければ{else}"
+    "if.else": "{cond}なら{then}。そうでなければ{else}",
+    "run.gainGold": "{amount}ゴールドを得る",
+    "run.loseGold": "{amount}ゴールドを失う",
+    "run.heal": "HPを{amount}回復",
+    "run.loseHp": "HPを{amount}失う",
+    "run.gainMaxHp": "最大HP+{amount}",
+    "run.loseMaxHp": "最大HP-{amount}",
+    "run.addCard": "{card}を{count}枚デッキに加える",
+    "run.addRandomCard": "ランダムな{rarity}{type}カードを{count}枚加える",
+    "run.offerCards": "{count}枚のカードから1枚選んで加える",
+    "run.removeCards": "カードを{count}枚取り除く",
+    "run.removeCards.random": "ランダムなカードを{count}枚取り除く",
+    "run.upgradeCards": "カードを{count}枚強化",
+    "run.upgradeCards.random": "ランダムなカードを{count}枚強化",
+    "run.transformCards": "カードを{count}枚別のカードに変える",
+    "run.transformCards.random": "ランダムなカードを{count}枚別のカードに変える",
+    "run.duplicateCard": "カードを{count}枚複製",
+    "run.duplicateCard.random": "ランダムなカードを{count}枚複製",
+    "run.gainRelic": "{relic}を得る",
+    "run.gainRelic.random": "ランダムな{rarity}レリックを得る",
+    "run.loseRelic": "レリックを1つ失う",
+    "run.fight": "{encounter}と戦う",
+    "run.chance": "{percent}%の確率で{then}",
+    "run.chance.else": "{percent}%の確率で{then}（外れると{else}）",
+    "run.if": "条件を満たせば{then}",
+    "run.join": "、",
+    "run.chance.miss": "{miss}%の確率で{else}"
   },
   "intents": {
-    "attack": "攻撃", "defend": "防御", "buff": "強化", "debuff": "弱体化",
-    "attack_defend": "攻撃と防御", "attack_debuff": "攻撃と弱体化", "attack_buff": "攻撃と強化", "defend_buff": "防御と強化",
-    "sleep": "眠っている", "escape": "逃げようとしている", "unknown": "不明"
+    "attack": "攻撃",
+    "defend": "防御",
+    "buff": "強化",
+    "debuff": "弱体化",
+    "attack_defend": "攻撃と防御",
+    "attack_debuff": "攻撃と弱体化",
+    "attack_buff": "攻撃と強化",
+    "defend_buff": "防御と強化",
+    "sleep": "眠っている",
+    "escape": "逃げようとしている",
+    "unknown": "不明"
   },
-  "nodes": { "battle": "戦闘", "elite": "強敵", "rest": "焚き火", "treasure": "宝箱", "boss": "ボス" },
-  "cardTypes": { "attack": "アタック", "skill": "スキル", "power": "パワー", "status": "状態異常", "curse": "呪い" },
-  "rarities": { "starter": "初期", "common": "コモン", "uncommon": "アンコモン", "rare": "レア", "special": "特殊" }
+  "nodes": {
+    "battle": "戦闘",
+    "elite": "強敵",
+    "rest": "焚き火",
+    "treasure": "宝箱",
+    "boss": "ボス",
+    "shop": "ショップ",
+    "event": "？"
+  },
+  "cardTypes": {
+    "attack": "アタック",
+    "skill": "スキル",
+    "power": "パワー",
+    "status": "状態異常",
+    "curse": "呪い"
+  },
+  "rarities": {
+    "starter": "初期",
+    "common": "コモン",
+    "uncommon": "アンコモン",
+    "rare": "レア",
+    "special": "特殊"
+  }
 }

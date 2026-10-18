@@ -100,6 +100,8 @@
   "relic.thorn": "icon/relic_thorn.svg",
   "relic.vial": "icon/relic_vial.svg",
   "relic.nut": "icon/relic_nut.svg",
+  "relic.tally": "icon/relic_tally.svg",
+  "relic.mask": "icon/relic_mask.svg",
   "relic.core": "icon/relic_core.svg",
   "intent.attack": "icon/intent_attack.svg",
   "intent.defend": "icon/intent_defend.svg",
@@ -111,5 +113,14 @@
   "node.rest": "icon/node_rest.svg",
   "node.treasure": "icon/node_treasure.svg",
   "node.boss": "icon/node_boss.svg",
-  "scene.campfire": "scene/campfire.svg"
+  "node.shop": "icon/node_shop.svg",
+  "node.event": "icon/node_event.svg",
+  "scene.campfire": "scene/campfire.svg",
+  "scene.merchant": "scene/merchant.svg",
+  "event.shrine": "event/shrine.svg",
+  "event.spring": "event/spring.svg",
+  "event.smith": "event/smith.svg",
+  "event.gambler": "event/gambler.svg",
+  "event.ambush": "event/ambush.svg",
+  "event.library": "event/library.svg"
 }

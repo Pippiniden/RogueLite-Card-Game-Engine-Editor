@@ -3,6 +3,7 @@
    so it always lists exactly what the code accepts. */
 import { writeFileSync } from 'node:fs';
 import { EFFECTS, EFFECT_GROUPS, TARGET_LABELS } from '../src/engine/effects.ts';
+import { RUN_EFFECTS, RUN_GROUPS } from '../src/engine/run-effects.ts';
 import { EVENTS, BY, FLAGS, STATS, MOD_OPS, STACKING, DECAY, KEYWORDS, CARD_TARGETS, INTENTS, FX_KINDS, SE_MOMENTS, BGM_SLOTS, VAR_HELP, type Opt } from '../src/editor/labels.ts';
 import { WIDGET_INFO, ACTION_INFO, SKIN_PARTS, SCREEN_IDS } from '../src/game/registry-names.ts';
 import { loadNodeContent } from './node-content.ts';
@@ -24,26 +25,38 @@ p('## 効果（effects）', '',
   'カードの `effects`、敵の行動、状態・レリックの `triggers[].effects` に並べる部品です。', '',
   '```json', '{ "op": "damage", "amount": 6, "times": 2, "to": "target" }', '```', '',
   '- 数値の項目（num）には数値のほか**式**も書けます（例 `"X"`、`"self.block"`、`"stacks * 2"`）。', '- `to` を省くと各効果の既定の受け手になります。', '');
-const byGroup = new Map<string, [string, typeof EFFECTS[string]][]>();
-for (const [op, d] of Object.entries(EFFECTS)) { const g = d.group; if (!byGroup.has(g)) byGroup.set(g, []); byGroup.get(g)!.push([op, d]); }
-for (const [g, list] of byGroup) {
-  p(`### ${EFFECT_GROUPS[g as keyof typeof EFFECT_GROUPS] ?? g}`, '');
-  for (const [op, d] of list) {
-    const def = typeof d.defaultTo === 'function' ? '（内容による）' : d.defaultTo ? `\`${d.defaultTo}\`` : 'なし';
-    p(`#### \`${op}\` — ${d.label}`, '', `既定の受け手: ${def}`, '');
-    const ps = Object.entries(d.params);
-    if (ps.length) {
-      p('| 項目 | 型 | 既定 | 説明 |', '| --- | --- | --- | --- |');
-      for (const [k, s] of ps) {
-        const opts = s.options ? ' ' + s.options.map(([v, l]) => `\`${v || '""'}\`=${l}`).join(' / ') : '';
-        p(`| \`${k}\`${s.required ? ' *' : ''} | ${s.type} | ${s.default === undefined ? '' : `\`${JSON.stringify(s.default)}\``} | ${cell(s.label + (s.help ? `（${s.help}）` : '') + opts)} |`);
+type OpLike = { label: string; group: string; params: Record<string, { type: string; label: string; required?: boolean; default?: unknown; help?: string; options?: [string, string][] }>; defaultTo?: unknown };
+const opTables = (reg: Record<string, OpLike>, groups: Record<string, string>, withTo: boolean) => {
+  const byGroup = new Map<string, [string, OpLike][]>();
+  for (const [op, d] of Object.entries(reg)) { if (!byGroup.has(d.group)) byGroup.set(d.group, []); byGroup.get(d.group)!.push([op, d]); }
+  for (const [g, list] of byGroup) {
+    p(`### ${groups[g] ?? g}`, '');
+    for (const [op, d] of list) {
+      p(`#### \`${op}\` — ${d.label}`, '');
+      if (withTo) { const def = typeof d.defaultTo === 'function' ? '（内容による）' : d.defaultTo ? `\`${d.defaultTo}\`` : 'なし'; p(`既定の受け手: ${def}`, ''); }
+      const ps = Object.entries(d.params);
+      if (ps.length) {
+        p('| 項目 | 型 | 既定 | 説明 |', '| --- | --- | --- | --- |');
+        for (const [k, s] of ps) {
+          const opts = s.options ? ' ' + s.options.map(([v, l]) => `\`${v || '""'}\`=${l}`).join(' / ') : '';
+          p(`| \`${k}\`${s.required ? ' *' : ''} | ${s.type} | ${s.default === undefined ? '' : `\`${JSON.stringify(s.default)}\``} | ${cell(s.label + (s.help ? `（${s.help}）` : '') + opts)} |`);
+        }
+        p('');
       }
-      p('');
     }
   }
-}
-p('`*` は必須。型の意味: num=数値か式 / int=整数 / bool=真偽 / string=文字 / cond=条件式 / enum=選択肢 / status=状態ID / card=カードID / cardOrSelf=カードIDか `$self` / target=受け手 / effects=効果の入れ子', '');
+};
+opTables(EFFECTS, EFFECT_GROUPS, true);
+p('`*` は必須。型の意味: num=数値か式 / int=整数 / bool=真偽 / string=文字 / cond=条件式 / enum=選択肢 / status=状態ID / card=カードID / cardOrSelf=カードIDか `$self` / target=受け手 / relic=レリックID / encounter=遭遇ID / page=イベントのページ / effects=効果の入れ子', '');
 optTable('受け手（to）', Object.entries(TARGET_LABELS) as Opt[]);
+
+/* ----- run effects ----- */
+p('## 冒険の効果（イベント・レリックを拾った時）', '',
+  'イベントの選択肢の `effects` と、レリックの `onPickup` に並べる部品です。戦闘の外で、デッキ・HP・ゴールド・レリックを変えます。', '',
+  '```json', '{ "label": "{bet}ゴールド賭ける", "enableIf": "gold >= bet", "effects": [', '  { "op": "loseGold", "amount": "bet" },', '  { "op": "chance", "percent": 45, "then": [{ "op": "gainGold", "amount": "prize" }, { "op": "goto", "page": "win" }], "else": [{ "op": "goto", "page": "lose" }] }', '] }', '```', '',
+  '- 式で使える変数: `gold` `hp` `maxHp` `hpPct` `floor`（今の階、1始まり）`deck` `deck.<種類>` `deck.upgradable` `relics` `relic.<ID>`（持っていれば1）`removals`（ショップで削除した回数）と、イベントの `vars`。',
+  '- カードを選ばせる効果（取り除く・強化・変化・複製・見せて選ばせる）は画面で選ぶまで待ち、残りの効果はそのあとに続きます。', '');
+opTables(RUN_EFFECTS as unknown as Record<string, OpLike>, RUN_GROUPS, false);
 
 /* ----- triggers & modifiers ----- */
 p('## トリガー（triggers）', '', '状態・レリック・カード（手札にある間 `handTriggers`）に付けます。', '',

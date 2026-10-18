@@ -1,5 +1,5 @@
 import type { App } from './app.ts';
-import type { ActionName } from './registry-names.ts';
+import type { ActionName, RunActionName } from './registry-names.ts';
 import { newRun, leaveNode, restHeal } from '../engine/run.ts';
 import { beginBattle, endTurn, confirmChoice } from './battle.ts';
 
@@ -15,6 +15,8 @@ export function resumeRun(app: App): void {
     case 'battle': beginBattle(app); return;
     case 'reward': case 'treasure': app.go('REWARD'); return;
     case 'rest': app.ui.restDone = false; app.go('REST'); return;
+    case 'shop': app.go('SHOP'); return;
+    case 'event': app.go('EVENT'); return;
     case 'won': case 'lost': app.go('RESULT'); return;
     default: app.go('MAP');
   }
@@ -26,7 +28,7 @@ export function startRunWith(app: App, charId: string) {
   app.go('MAP');
 }
 
-const BUILTIN: Record<Exclude<ActionName, 'open' | 'close'>, Action> = {
+const BUILTIN: Record<Exclude<ActionName, 'open' | 'close' | RunActionName>, Action> = {
   newRun(app) {
     const chars = app.playableCharacters();
     if (chars.length > 1 && app.layout.screens.has('CHARSELECT')) { app.ui.charId ||= chars[0].id; app.go('CHARSELECT'); return false; }
