@@ -148,6 +148,7 @@ export function selectCard(app: App, uid: number) {
     app.banner(cost === null || (typeof cost === 'number' && cost <= cb.energy) ? app.t('battle.unplayable') : app.t('battle.noEnergy'), 900);
     return;
   }
+  if (app.ui.potionTarget !== null) { app.ui.potionTarget = null; app.ui.banner = ''; }
   if (app.ui.selected === uid) {
     const v = cb.view(card); const alive = cb.enemies.filter(e => e.alive);
     if (v.target !== 'enemy') return playCard(app, uid);
@@ -182,8 +183,25 @@ export function confirmChoice(app: App) {
   void playFrames(app, cb.choose(picked));
 }
 
+/** drink a potion in battle; potions aimed at one enemy wait for an enemy tap when there are several */
+export function drinkPotion(app: App, slot: number, target?: number) {
+  const cb = app.combat; if (!cb || app.ui.busy || cb.choice) return;
+  if (!cb.canUsePotion(slot)) { app.banner(app.t('potion.notNow'), 900); return; }
+  const d = app.content.potions.get(cb.potions[slot]!)!;
+  if (d.target === 'enemy' && target === undefined) {
+    const alive = cb.enemies.filter(e => e.alive);
+    if (alive.length === 1) target = alive[0].uid;
+    else { app.ui.potionTarget = slot; app.ui.selected = null; app.refreshBinds('hand', 'enemies', 'run.potions'); app.banner(app.t('potion.chooseTarget'), 0); return; }
+  }
+  app.ui.potionTarget = null;
+  app.ui.banner = '';
+  app.sound.se('potion');
+  void playFrames(app, cb.usePotion(slot, target));
+}
+
 export function tapEnemy(app: App, uid: number) {
   const cb = app.combat; if (!cb) return;
+  if (app.ui.potionTarget !== null) return drinkPotion(app, app.ui.potionTarget, uid);
   if (app.ui.selected !== null) {
     const card = cb.hand.find(c => c.uid === app.ui.selected);
     if (card && cb.view(card).target === 'enemy') return playCard(app, card.uid, uid);

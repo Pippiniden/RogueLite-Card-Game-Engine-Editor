@@ -10,5 +10,10 @@
   {"id":"old_nut","name":"古木の実","icon":"relic.nut","rarity":"common","desc":"拾ったとき最大HPが7増える","onPickup":[{"op":"gainMaxHp","amount":7}]},
   {"id":"cracked_core","name":"ひび割れた核","icon":"relic.core","rarity":"uncommon","desc":"戦闘開始時に結界を1得る","triggers":[{"on":"battleStart","effects":[{"op":"applyStatus","status":"artifact","stacks":1}]}]},
   {"id":"merchant_tally","name":"商人の割符","icon":"relic.tally","rarity":"shop","desc":"ショップの品物がすべて半額になる。","shop":{"discount":0.5}},
-  {"id":"smiling_mask","name":"笑う仮面","icon":"relic.mask","rarity":"shop","desc":"ショップでカードを取り除く料金が、いつも50ゴールドになる。","shop":{"removalPrice":50}}
+  {"id":"smiling_mask","name":"笑う仮面","icon":"relic.mask","rarity":"shop","desc":"ショップでカードを取り除く料金が、いつも50ゴールドになる。","shop":{"removalPrice":50}},
+  {"id":"ember_heart","name":"灼けた心臓","icon":"relic.heart","rarity":"boss","desc":"毎ターンのエネルギー+1。戦闘開始時、山札に火傷を1枚混ぜる。","modifiers":[{"stat":"energyPerTurn","op":"add","value":1}],"triggers":[{"on":"battleStart","effects":[{"op":"addCard","card":"burn","pile":"draw","count":1}]}]},
+  {"id":"heavy_crown","name":"重い王冠","icon":"relic.crown","rarity":"boss","desc":"毎ターンのエネルギー+1。毎ターン引くカードが1枚減る。","modifiers":[{"stat":"energyPerTurn","op":"add","value":1},{"stat":"drawPerTurn","op":"add","value":-1}]},
+  {"id":"star_chart","name":"星図","icon":"relic.astrolabe","rarity":"boss","desc":"拾った時、デッキのカードを3枚選んで別のカードに変える。","onPickup":[{"op":"transformCards","count":3}]},
+  {"id":"potion_belt","name":"薬帯","icon":"relic.belt","rarity":"common","desc":"ポーションを入れられる枠が2つ増える。","onPickup":[{"op":"addPotionSlots","count":2}]},
+  {"id":"apothecary_spoon","name":"薬師の匙","icon":"relic.vial","rarity":"uncommon","desc":"ポーションを使うたびにHPを5回復する。","triggers":[{"on":"potionUsed","effects":[{"op":"heal","amount":5}]}]}
 ]

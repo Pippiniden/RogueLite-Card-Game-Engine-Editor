@@ -1,3 +1,4 @@
+import { cssSection } from './css-section.ts';
 import '../game/cards.css';
 import './editor.css';
 import { Project, type ListKind, LIST_KINDS } from './project.ts';
@@ -13,7 +14,7 @@ import { playtest, playtestMenu } from './playtest.ts';
 const NAV: { group: string; items: [string, string][] }[] = [
   { group: 'コンテンツ', items: LIST_KINDS.map(k => [k, KINDS[k].label.replace(/（.*/, '')] as [string, string]) },
   { group: '遊びの数値', items: [['rules', 'ルール'], ['vfx', '演出']] },
-  { group: '見た目と音', items: [['theme', '見た目・UIスキン'], ['audio', 'サウンド'], ['assets', '素材']] },
+  { group: '見た目と音', items: [['theme', '見た目・UIスキン'], ['css', 'CSS'], ['audio', 'サウンド'], ['assets', '素材']] },
   { group: '文言と画面', items: [['texts', '文言'], ['layout', '画面配置']] },
   { group: '拡張', items: [['plugins', 'プラグイン'], ['packs', 'パック']] },
   { group: '', items: [['issues', '検証']] },
@@ -64,6 +65,7 @@ function section(): HTMLElement {
     case 'texts': return textsSection();
     case 'layout': return layoutSection();
     case 'plugins': return pluginsSection();
+    case 'css': return cssSection();
     case 'packs': return packsSection(render);
     default: return issuesSection(go);
   }

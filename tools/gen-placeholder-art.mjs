@@ -159,6 +159,46 @@ const enemies = {
     <path d="M100 132 q28 16 56 0 l-6 14 q-22 8 -44 0z" fill="#2a1d1a"/><path d="M108 132 l4 8 l4 -7 M140 132 l4 8 l4 -8" fill="#f2ead8"/>
     <circle cx="118" cy="118" r="3" fill="#2a1d1a"/><circle cx="138" cy="118" r="3" fill="#2a1d1a"/>`),
 };
+/* act 2 */
+const shadow = (rx = 90) => `<ellipse cx="128" cy="248" rx="${rx}" ry="8" fill="#000" opacity=".25"/>`;
+Object.assign(enemies, {
+  rust_golem: svg(256, 256, `${shadow(96)}
+    <rect x="58" y="96" width="140" height="130" rx="18" fill="#8a5a3a"/><rect x="70" y="108" width="116" height="40" rx="8" fill="#a8704a"/>
+    <rect x="30" y="120" width="34" height="96" rx="14" fill="#7a4a2e"/><rect x="192" y="120" width="34" height="96" rx="14" fill="#7a4a2e"/>
+    <rect x="86" y="40" width="84" height="64" rx="14" fill="#9a6440"/><rect x="98" y="62" width="60" height="14" rx="6" fill="#2a1a12"/>
+    <circle cx="112" cy="69" r="5" fill="#7ad6f0"/><circle cx="144" cy="69" r="5" fill="#7ad6f0"/>
+    <rect x="76" y="226" width="40" height="20" fill="#6a3e26"/><rect x="140" y="226" width="40" height="20" fill="#6a3e26"/>
+    <circle cx="90" cy="180" r="6" fill="#c08a5a"/><circle cx="168" cy="196" r="4" fill="#c08a5a"/>`),
+  shade: svg(256, 256, `${shadow(60)}
+    <path d="M128 40 q60 30 56 120 q-4 60 -20 86 q-14 -18 -20 -2 q-8 -18 -16 0 q-8 -18 -16 0 q-6 -16 -20 2 q-16 -26 -20 -86 q-4 -90 56 -120z" fill="#2a2440" opacity=".92"/>
+    <path d="M128 60 q40 24 40 80 q-20 -40 -40 -40 q-20 0 -40 40 q0 -56 40 -80z" fill="#3e3660"/>
+    ${eye(108, 128, 9, '#d9c8ff', '#4a2a8a')}${eye(148, 128, 9, '#d9c8ff', '#4a2a8a')}`),
+  bone_archer: svg(256, 256, `${shadow(70)}
+    <rect x="112" y="120" width="32" height="84" rx="10" fill="#e3dccb"/><path d="M112 140 h32 M112 160 h32 M112 180 h32" stroke="#a69e8a" stroke-width="4"/>
+    <path d="M118 204 l-14 42 M138 204 l14 42" stroke="#e3dccb" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="128" cy="84" r="34" fill="#efe8d6"/><circle cx="116" cy="82" r="9" fill="#2a2420"/><circle cx="142" cy="82" r="9" fill="#2a2420"/><path d="M116 104 h24" stroke="#2a2420" stroke-width="4"/>
+    <path d="M188 70 q40 70 0 140" stroke="#7a5a2a" stroke-width="8" fill="none"/><path d="M188 70 v140" stroke="#ddd" stroke-width="2"/>
+    <path d="M144 140 l44 -4" stroke="#e3dccb" stroke-width="10" stroke-linecap="round"/>`),
+  mire_slug: svg(256, 256, `${shadow(110)}
+    <path d="M14 244 q-4 -80 60 -110 q60 -26 120 10 q52 34 50 100z" fill="#5a7a3a"/>
+    <path d="M30 236 q10 -60 70 -84 q-40 40 -40 84z" fill="#7a9a4a" opacity=".8"/>
+    <path d="M176 144 l14 -60 M200 154 l26 -52" stroke="#5a7a3a" stroke-width="10" stroke-linecap="round"/>
+    <circle cx="190" cy="80" r="11" fill="#e8f0a0"/><circle cx="228" cy="98" r="11" fill="#e8f0a0"/><circle cx="190" cy="80" r="5" fill="#2a3010"/><circle cx="228" cy="98" r="5" fill="#2a3010"/>
+    <circle cx="90" cy="200" r="8" fill="#a8c070" opacity=".7"/><circle cx="130" cy="214" r="5" fill="#a8c070" opacity=".7"/>`),
+  lantern_wraith: svg(256, 256, `${shadow(70)}
+    <path d="M128 24 q74 40 70 140 q-6 56 -30 82 q-12 -16 -22 0 q-10 -18 -18 0 q-8 -18 -18 0 q-10 -16 -22 0 q-24 -26 -30 -82 q-4 -100 70 -140z" fill="#1e2a36" opacity=".95"/>
+    <path d="M128 50 q44 30 44 90 q-20 -30 -44 -30 q-24 0 -44 30 q0 -60 44 -90z" fill="#2e4256"/>
+    ${eye(108, 116, 10, '#9ff0ff', '#0a4a5a')}${eye(148, 116, 10, '#9ff0ff', '#0a4a5a')}
+    <rect x="114" y="160" width="28" height="40" rx="6" fill="#1a1612"/><rect x="119" y="166" width="18" height="28" rx="4" fill="#7af0ff"/><circle cx="128" cy="180" r="30" fill="#7af0ff" opacity=".18"/>`),
+  abyss_warden: svg(320, 320, `<ellipse cx="160" cy="312" rx="130" ry="9" fill="#000" opacity=".3"/>
+    <path d="M40 312 q-6 -150 120 -200 q126 50 120 200z" fill="#1a1e2e"/>
+    <path d="M70 312 q0 -120 90 -164 q90 44 90 164z" fill="#262c44"/>
+    <path d="M100 120 l-30 -70 l50 40z M220 120 l30 -70 l-50 40z" fill="#3a4060"/>
+    <circle cx="160" cy="130" r="54" fill="#2e3452"/><path d="M118 132 h84" stroke="#1a1e2e" stroke-width="14"/>
+    <circle cx="140" cy="132" r="8" fill="#ff9a5a"/><circle cx="180" cy="132" r="8" fill="#ff9a5a"/>
+    <path d="M60 220 q-30 20 -36 60 M260 220 q30 20 36 60" stroke="#3a4060" stroke-width="16" fill="none" stroke-linecap="round"/>
+    <path d="M120 230 h80 M126 250 h68 M132 270 h56" stroke="#ff9a5a" stroke-width="3" opacity=".6"/>`),
+});
 for (const [k, v] of Object.entries(enemies)) put(`enemy.${k}`, `enemy/${k}.svg`, v);
 
 /* ===== card art: a glyph on a tinted vignette (the card frame supplies the type colour) ===== */
@@ -223,6 +263,10 @@ const RELIC = {
 RELIC.nut = icon('<ellipse cx="32" cy="36" rx="14" ry="16" fill="#9a6a3a"/><path d="M22 28 q10 -16 20 0" fill="#6a4a2a"/><path d="M32 14 v8" stroke="#5a8a3a" stroke-width="4"/>', '#22201a');
 RELIC.tally = icon('<rect x="18" y="12" width="28" height="40" rx="4" fill="#c9a86a"/><path d="M24 22 h16 M24 30 h16 M24 38 h10" stroke="#5a3e1e" stroke-width="3"/><circle cx="40" cy="44" r="5" fill="#c8443b"/>', '#2a2214');
 RELIC.mask = icon('<path d="M14 24 q18 -10 36 0 q2 22 -18 30 q-20 -8 -18 -30z" fill="#e9dcbf"/><path d="M22 30 q4 -4 8 0 M34 30 q4 -4 8 0" stroke="#2a1d1a" stroke-width="3" fill="none"/><path d="M24 40 q8 8 16 0" stroke="#2a1d1a" stroke-width="3" fill="none"/>', '#2a2420');
+RELIC.heart = icon('<path d="M32 50 q-20 -14 -20 -28 q0 -12 12 -12 q8 0 8 8 q0 -8 8 -8 q12 0 12 12 q0 14 -20 28z" fill="#e0522a"/><path d="M28 22 q4 6 0 12 q8 -2 6 -12" fill="#ffd27a"/>', '#2a1410');
+RELIC.crown = icon('<path d="M12 44 l4 -24 l10 10 l6 -14 l6 14 l10 -10 l4 24z" fill="#d9a441"/><rect x="12" y="44" width="40" height="6" fill="#b8862a"/><circle cx="32" cy="38" r="3" fill="#c8443b"/>', '#24201a');
+RELIC.astrolabe = icon('<circle cx="32" cy="32" r="18" fill="none" stroke="#c9b48a" stroke-width="3"/><ellipse cx="32" cy="32" rx="18" ry="7" fill="none" stroke="#7ab6d6" stroke-width="2" transform="rotate(30 32 32)"/><circle cx="32" cy="32" r="4" fill="#f0c060"/>', '#1a2030');
+RELIC.belt = icon('<rect x="8" y="26" width="48" height="12" rx="3" fill="#8a6440"/><rect x="14" y="20" width="9" height="16" rx="3" fill="#c8443b"/><rect x="27" y="20" width="9" height="16" rx="3" fill="#5d8fd6"/><rect x="40" y="20" width="9" height="16" rx="3" fill="#6fae4a"/>', '#24201a');
 RELIC.core = icon('<path d="M32 12 l16 20 l-16 20 l-16 -20z" fill="#7ab6d6"/><path d="M28 22 l6 10 l-4 4 l6 8" stroke="#1d2a33" stroke-width="2.5" fill="none"/>', '#16202a');
 for (const [k, v] of Object.entries(RELIC)) put(`relic.${k}`, `icon/relic_${k}.svg`, v);
 const INTENT = {
@@ -243,6 +287,20 @@ const NODE = {
   event: icon('<text x="32" y="47" font-size="40" font-weight="700" text-anchor="middle" fill="#c9b8f0" font-family="serif">?</text>'),
 };
 for (const [k, v] of Object.entries(NODE)) put(`node.${k}`, `icon/node_${k}.svg`, v);
+
+/* ===== potions: a flask in the potion's colour ===== */
+const flask = (c1, c2, shape = 'round') => icon((shape === 'round'
+  ? '<path d="M26 12 h12 v10 q12 6 12 18 q0 14 -18 14 q-18 0 -18 -14 q0 -12 12 -18z" fill="#dfe6ee" opacity=".35"/><path d="M15 38 q2 -6 17 -6 q15 0 17 6 q0 14 -17 14 q-17 0 -17 -14z" fill="' + c1 + '"/>'
+  : shape === 'tall' ? '<path d="M27 10 h10 v14 l6 6 v20 q0 4 -4 4 h-14 q-4 0 -4 -4 v-20 l6 -6z" fill="#dfe6ee" opacity=".35"/><path d="M21 34 h22 v16 q0 4 -4 4 h-14 q-4 0 -4 -4z" fill="' + c1 + '"/>'
+  : '<path d="M24 12 h16 v8 l10 22 q2 10 -8 10 h-20 q-10 0 -8 -10 l10 -22z" fill="#dfe6ee" opacity=".35"/><path d="M18 36 h28 l4 6 q2 10 -8 10 h-20 q-10 0 -8 -10z" fill="' + c1 + '"/>')
+  + '<rect x="25" y="8" width="14" height="6" rx="2" fill="#7a5a2a"/><circle cx="26" cy="40" r="3" fill="' + c2 + '" opacity=".8"/>', '#1e1c22');
+const POTION = {
+  fire: flask('#f06a2a', '#ffd27a'), explosive: flask('#e8a020', '#fff0a0', 'cone'), block: flask('#5d8fd6', '#cfe0ff', 'tall'),
+  strength: flask('#c8443b', '#ffb0a0'), dexterity: flask('#6fae4a', '#d0f0a0', 'tall'), weak: flask('#8a7ad6', '#e0d8ff', 'cone'),
+  fear: flask('#5a3a7a', '#c8a0e8'), energy: flask('#f0c040', '#fff4c0', 'tall'), swift: flask('#4ac0c8', '#c0f4f8', 'cone'),
+  poison: flask('#7ccc4a', '#e0ffb0'), heal: flask('#e85a8a', '#ffd0e0'), fruit: flask('#f08a3a', '#ffe0a0', 'tall'),
+};
+for (const [k, v] of Object.entries(POTION)) put(`potion.${k}`, `icon/potion_${k}.svg`, v);
 
 /* ===== scenes ===== */
 put('scene.campfire', 'scene/campfire.svg', svg(200, 200, `

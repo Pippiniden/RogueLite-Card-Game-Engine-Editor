@@ -1,0 +1,316 @@
+/* ==== RLCE CSS GUIDE ====
+ RogueLite Card Game Engine & Editor — パック「基本パック（base）」の追加CSS
+ （この説明はエディターが付けたものです。読み込む時に自動で取り除かれます）
+
+ ■ このファイルについて
+   ゲームの組み込みのCSSの後に読まれます。同じセレクターなら、こちらが勝ちます。
+   色とフォントは theme.json（エディターの「見た目・UIスキン」）、窓枠やボタンを画像にするのは
+   theme.json の skins が担当です。ここでは「それ以外の見た目」を変えます。
+   画面ごとに変えたい時は [data-screen="BATTLE"] のように画面IDで絞ります。
+
+ ■ 守るルール（エディターの「CSS」と npm run check が確かめます）
+ [必ず] 位置と大きさは画面配置で決める
+     画面配置の要素（.q、.t-*、[data-qid]、[data-bind]）に position・left・top・right・bottom・inset・width・height を書かない。位置と大きさは画面配置ツールの座標がそのまま使われる。中の部品（例: [data-bind="hand"] .card）は変えてよい。
+ [必ず] 画面の土台に触らない
+     html・body・#stage・.q-host・.q-screen には CSS変数（--で始まる名前）と background だけを書く。スマホの画面に合わせて縮める仕組みが壊れる。
+ [必ず] 外のファイルを読まない
+     @import と、http(s):// や // で始まる url() を使わない（GitHub Pages・オフライン・プライバシーのため）。画像は素材（assets/manifest.json）と theme.json の skins で使う。data: の url() はよい。
+ [必ず] 括弧を閉じる
+     { } と ( ) と引用符はかならず閉じる。閉じていないと、それ以降の CSS がすべて効かなくなる。
+ [なるべく] 要素を消さない
+     画面配置の要素に display:none・visibility:hidden・opacity:0 を書かない。出す・出さないは画面配置の show（表示条件）で決まる。消すとボタンが押せなくなる。
+ [なるべく] 要素を動かさない
+     画面配置の要素に transform・translate・scale・rotate・margin を書かない（:active の押し込みは例外）。タップできる場所と見た目がずれる。
+ [なるべく] !important を使わない
+     !important は、重ね表示を隠す [hidden] や「動きを減らす」設定などの組み込みのルールを上書きしてしまう。詳しいセレクター（[data-screen="BATTLE"] …）で勝つ。
+ [なるべく] 押せるものを押せなくしない
+     ボタン・カード・マップのノード・選択肢・ポーションに pointer-events:none を書かない。
+ [なるべく] 小さすぎる文字にしない
+     font-size は 11px 以上（スマホで読める大きさ）。
+ [なるべく] 広すぎるセレクターを使わない
+     * や button・div・img などタグ名だけのセレクターは、すべての画面と組み込みの部品に効いてしまう。クラスか [data-bind] で絞る。
+ [なるべく] 重なり順を上げすぎない
+     z-index は 100 以下。重ね表示は 40、知らせの帯は 45、演出の文字は 80〜90。それより上にすると演出やダイアログが隠れる。
+
+ ■ 部品の一覧
+   どのセレクターが何か、は docs/css-guide.md と、エディターの「CSS」の右側にあります。
+@end-guide */
+
+
+/* ================ 色と文字 ================ */
+
+/* ── 色とフォントの変数 ─────────
+   色とフォントは theme.json（エディターの「見た目・UIスキン」）で決めるのが基本。CSS で上書きする時は :root ではなく #stage に書く（:root より theme.json の方が強いため）。--c-bg 背景 / --c-ink 文字 / --c-muted 弱い文字 / --c-parchment 羊皮紙色 / --c-ember 差し色 / --c-hp HP / --c-block ブロック / --c-energy エネルギー / --f-display 見出しの書体 / --f-body 本文の書体
+*/
+#stage {
+  /* --c-ember: #e8913a; */
+  /* --c-parchment: #e9dcbf; */
+  /* --f-display: "Shippori Mincho", serif; */
+}
+
+
+/* ================ 画面 ================ */
+
+/* ── 画面の背景 ─────────
+   画面ごとの背景。画面IDは TITLE CHARSELECT MAP BATTLE REWARD REST SHOP EVENT RESULT。絵の背景は theme.json の backgrounds か幕の backgrounds で指定する（ここでは色やグラデーション）。
+*/
+[data-screen="MAP"] {
+  /* background: linear-gradient(#161922, #0c0d12); */
+}
+
+/* ── 上部バー ─────────
+   顔・HP・階層・所持金の帯。画像にしたい時は theme.json の skins の topbar を使う。
+*/
+[data-qid="A"].t-frame {
+  /* background: linear-gradient(rgba(10,11,15,.9), rgba(10,11,15,.55)); */
+  /* border-bottom: 1px solid #2b2f3a; */
+}
+
+
+/* ================ ボタン ================ */
+
+/* ── ボタン全般 ─────────
+   画面配置の button すべて。押した時は :active、押せない時は :disabled。押せる広さは画面配置で決まるので、ここで変えるのは色・枠・文字だけ。
+*/
+.t-button {
+  /* border-radius: 10px; */
+  /* border: 1px solid #5a4a36; */
+  /* background: linear-gradient(#3a3226, #2a241c); */
+  /* color: var(--c-parchment); */
+  /* font-size: 16px; */
+}
+
+/* ── 押せないボタン ─────────
+   お金が足りない・選べない時など。薄くするのが基本（消さない）。
+*/
+.t-button:disabled {
+  /* opacity: .4; */
+}
+
+/* ── ターン終了ボタン ─────────
+   戦闘で一番よく押すボタン。目立つ色にしておく。
+*/
+[data-bind="battle.endTurn"] {
+  /* background: linear-gradient(#b8642a, var(--c-emberDeep)); */
+  /* border-color: #e8a060; */
+  /* color: #fff4e2; */
+}
+
+
+/* ================ 文字 ================ */
+
+/* ── 見出し（報酬・焚き火・結果） ─────────
+   大きな見出し。長い見出し（幕の突破など）は .long が付いて小さくなる。
+*/
+[data-bind="reward.title"], [data-bind="rest.title"], [data-bind="result.title"] {
+  /* font-family: var(--f-display); */
+  /* font-size: 30px; */
+  /* letter-spacing: .2em; */
+  /* color: var(--c-parchment); */
+}
+
+/* ── 知らせの帯 ─────────
+   「敵のターン」「〇〇を手に入れた」「第二幕」などを短く出す帯。
+*/
+[data-bind="battle.banner"] {
+  /* font-size: 24px; */
+  /* background: linear-gradient(90deg, transparent, rgba(10,11,15,.88) 20%, rgba(10,11,15,.88) 80%, transparent); */
+}
+
+
+/* ================ ゲージ ================ */
+
+/* ── HPゲージの溝と中身 ─────────
+   .gauge-bar が溝、中の i が減っていく中身。ブロックがある時は .has-block が付く。
+*/
+.gauge-bar, .gauge-bar i {
+  /* .gauge-bar では → border-radius: 6px; */
+  /* .gauge-bar i では → background: linear-gradient(#e0574c, var(--c-hp) 60%, #8e2a24); */
+}
+
+/* ── エネルギーの玉 ─────────
+   中の b が残り、small が最大値。使い切ると .empty が付く。
+*/
+.energy {
+  /* background: radial-gradient(circle at 40% 35%, #ffe7a6, var(--c-energy) 45%, #8a5a14 100%); */
+  /* color: #2a1a06; */
+}
+
+
+/* ================ カード ================ */
+
+/* ── カードの外枠 ─────────
+   カードの一番外側。種類で .ct-attack .ct-skill .ct-power .ct-status .ct-curse、レアリティで .cr-common .cr-uncommon .cr-rare、強化済みで .up が付く。大きさは置き場所（手札・一覧）が決めるので、幅や高さは書かない。
+*/
+.card {
+  /* border-radius: 9px; */
+  /* box-shadow: 0 0 0 1px #000, 0 6px 14px rgba(0,0,0,.5); */
+}
+
+/* ── カードの名前の帯 ─────────
+   名前の帯。文字の大きさはカードの幅に対する割合（cqw）で書くと、どの大きさのカードでも同じ見た目になる。
+*/
+.card-name {
+  /* font-family: var(--f-display); */
+  /* font-size: 13cqw; */
+  /* background: linear-gradient(#f3ead6, #ddcca8); */
+}
+
+/* ── カードの絵 ─────────
+   16:9 の絵の枠。中の img は object-fit: cover で切り抜かれる。
+*/
+.card-art {
+  /* background: #2a2622; */
+}
+
+/* ── カードの説明文 ─────────
+   効果の文。数字は b.p-num、筋力などで増えた数字は b.p-up、減った数字は b.p-down、キーワードは b.p-kw。
+*/
+.card-text {
+  /* font-size: 9.6cqw; */
+  /* line-height: 1.25; */
+}
+
+/* ── コストの玉 ─────────
+   左上のコスト。今だけ変わっている時は .changed が付く。画像にしたい時は skins の card.cost。
+*/
+.card-cost {
+  /* background: radial-gradient(circle at 40% 35%, #ffe7a6, var(--c-energy) 50%, #8a5a14); */
+  /* color: #2a1a06; */
+}
+
+/* ── 手札のカード ─────────
+   手札。扇形の位置は --x --y --r で毎回計算されるので transform は書かない。選んだカードは .selected、使えないカードは .cant。
+*/
+[data-bind="hand"] .card {
+  /* .selected では → filter: drop-shadow(0 0 10px rgba(232,145,58,.8)); */
+}
+
+
+/* ================ 戦闘 ================ */
+
+/* ── 敵 ─────────
+   敵1体。中に .enemy-intent（頭上の予告）、.enemy-body（絵）、.enemy-hp（HPゲージ）、.enemy-st（状態）。倒れると .dead。位置は陣形（ルール）で決まる。
+*/
+.enemy {
+  /* .enemy-intent b では → color: #ffe6d0; */
+  /* .enemy-body img では → filter: drop-shadow(0 6px 10px rgba(0,0,0,.5)); */
+}
+
+/* ── 状態アイコン ─────────
+   筋力・脆弱などのアイコン。数字は中の b。弱体は .st-debuff。
+*/
+.st {
+  /* .st b では → background: #0b0c11; */
+}
+
+
+/* ================ マップ ================ */
+
+/* ── マップのノード ─────────
+   丸いノード。種類で .n-battle .n-elite .n-rest .n-treasure .n-shop .n-event .n-boss、進める所は .reach、通った所は .visited、今いる所は .current。
+*/
+.map-node {
+  /* border: 2px solid #4a4434; */
+  /* background: #1b1d25; */
+  /* .reach では → border-color: var(--c-parchment); */
+}
+
+/* ── マップの道 ─────────
+   ノードをつなぐ線（SVG）。通った道は .walked。
+*/
+.map-lines line {
+  /* stroke: #5b5444; */
+  /* stroke-dasharray: 3 6; */
+}
+
+
+/* ================ 報酬・ショップ・イベント ================ */
+
+/* ── 報酬などの1行 ─────────
+   報酬のゴールド・レリック・ポーション、ショップのレリックの行。画像にしたい時は skins の reward.item。
+*/
+.reward-item {
+  /* border-radius: 10px; */
+  /* border: 1px solid #4a4030; */
+  /* background: #201d18; */
+}
+
+/* ── ショップの値札 ─────────
+   値段。お金が足りない時は .short。セールのカードは .shop-item.sale の中。
+*/
+.price {
+  /* font-weight: 800; */
+  /* color: var(--c-parchment); */
+  /* .short では → color: #e07a6a; */
+}
+
+/* ── 店主のひとこと ─────────
+   吹き出し。::before が左向きのしっぽ。
+*/
+[data-bind="shop.say"] {
+  /* background: #1d2028; */
+  /* border: 1px solid #333846; */
+}
+
+/* ── イベントの選択肢 ─────────
+   選択肢のボタン。b がボタンの文字、small が効果の説明、small.why が選べない理由。
+*/
+.event-option {
+  /* border: 1px solid #4a4030; */
+  /* background: #201d18; */
+  /* small.why では → color: #e07a6a; */
+}
+
+/* ── イベントの文章 ─────────
+   物語の文。1行ずつ p になる。
+*/
+[data-bind="event.text"] {
+  /* font-size: 15px; */
+  /* line-height: 1.75; */
+}
+
+
+/* ================ ポーション ================ */
+
+/* ── ポーションの枠 ─────────
+   上部の枠1つ。空きは .empty、敵を選んで投げる途中は .aiming。
+*/
+.potion-slot {
+  /* border: 1px solid #4a4030; */
+  /* background: #17181d; */
+  /* .empty では → border-style: dashed; */
+}
+
+
+/* ================ 重ね表示 ================ */
+
+/* ── ダイアログ ─────────
+   重ね表示の枠（デッキ一覧・詳細・購入確認・ポーション）。画像にしたい時は skins の dialog。
+*/
+.t-dialog {
+  /* border-radius: 14px; */
+  /* background: linear-gradient(#1f222c, #171920); */
+}
+
+/* ── ダイアログの後ろの暗幕 ─────────
+   ダイアログの後ろを暗くする幕。
+*/
+.q-scrim {
+  /* background: rgba(5,6,9,.62); */
+}
+
+
+/* ================ 演出 ================ */
+
+/* ── ダメージなどの数字 ─────────
+   飛び出す数字。種類で .fx-dmg（ダメージ）.fx-blk（ブロック）.fx-heal（回復）.fx-poison（毒）.fx-buff .fx-debuff。
+*/
+.fx-float {
+  /* font-family: var(--f-display); */
+  /* font-size: 28px; */
+  /* .fx-heal では → color: var(--c-good); */
+}
+
+
+/* ================ ここから自分の CSS ================ */

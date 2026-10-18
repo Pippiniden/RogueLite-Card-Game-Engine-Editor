@@ -3,7 +3,9 @@
 import { loadNodeContent } from './node-content.ts';
 import { Combat } from '../src/engine/combat.ts';
 import { registerEffect } from '../src/engine/effects.ts';
-import { newRun, enterNode, startCombat, finishCombat } from '../src/engine/run.ts';
+import { newRun, enterNode, startCombat, finishCombat, takePotion, takeRelic, leaveNode, startAct, actMap } from '../src/engine/run.ts';
+import { usePotionOutside, buyPotion, givePotion, pickEvent } from '../src/engine/run-effects.ts';
+import { lintCss, cssStarter } from '../src/engine/css-guide.ts';
 import { registerRunEffect, runRunEffects, makeShop, buyCard, startRemoval, resolveChoice, removalPrice, shopPrice, startEvent, eventOptions, chooseEventOption, applyPick, makeCtx } from '../src/engine/run-effects.ts';
 import { Rng } from '../src/engine/rng.ts';
 import { evalNum } from '../src/engine/expr.ts';
@@ -179,6 +181,83 @@ const evRun = (id: string, gold = 200) => { const run = newRun(c, char, 9); run.
   const ctx = makeCtx(c, run, 'event', false);
   runRunEffects(ctx, [{ op: 'tithe', percent: 25 }]);
   expect('docs の冒険の効果の例', [run.gold, ctx.log], [150, [{ t: 'gold', n: -50 }]]);
+}
+
+/* ----- potions ----- */
+{
+  const cb = battle(['strike', 'strike', 'strike', 'strike', 'strike']);
+  cb.potions = ['fire_potion', 'block_potion', null];
+  cb.usePotion(0, cb.enemies[0].uid);
+  expect('火炎瓶で20', cb.enemies[0].hp, 80);
+  expect('使った枠は空く', cb.potions[0], null);
+  cb.usePotion(1);
+  expect('硬化薬でブロック12', cb.player.block, 12);
+  expect('空の枠は使えない', cb.canUsePotion(0), false);
+  cb.relics.push('apothecary_spoon'); cb.player.hp = 50; cb.potions[2] = 'energy_potion';
+  cb.usePotion(2);
+  expect('薬師の匙: ポーションで回復5', cb.player.hp, 55);
+  expect('ポーションを得る（戦闘中）', [cb.addPotion('weak_potion'), cb.potions.filter(Boolean).length], [true, 1]);
+}
+{
+  const run = newRun(c, char, 3);
+  expect('最初は3枠', run.potions, [null, null, null]);
+  run.potionChance = 100;
+  const node = run.map.floors[0].find(Boolean)!; enterNode(c, run, node);
+  const cb = startCombat(c, run); cb.start(); cb.enemies.forEach(e => { e.hp = 0; e.alive = false; }); (cb as unknown as { phase: string }).phase = 'won';
+  finishCombat(c, run, cb);
+  expect('確率100%でポーションが出て、確率が下がる', [!!run.pending?.potion, run.potionChance], [true, 90]);
+  expect('受け取れる', takePotion(run), true);
+  run.potions = ['fire_potion', 'fire_potion', 'fire_potion']; run.pending!.potionTaken = false;
+  expect('いっぱいだと受け取れない', takePotion(run), false);
+  run.potions = ['healing_potion', 'fire_potion', null]; run.hp = 30;
+  expect('戦闘の外で癒やしの薬', [usePotionOutside(c, run, 0).status, run.hp], ['done', 44]);
+  expect('火炎瓶は戦闘の外で使えない', usePotionOutside(c, run, 1).status, 'invalid');
+  run.relics.push('potion_belt'); run.pending = { gold: 0, cards: [], relic: 'potion_belt' };
+  run.relics.pop(); takeRelic(c, run);
+  expect('薬帯で枠が2つ増える', run.potions!.length, 5);
+}
+{
+  const run = newRun(c, char, 5); run.gold = 500;
+  run.shop = makeShop(c, run, new Rng(8)); run.phase = 'shop';
+  expect('ショップのポーションは3つ', run.shop.potions?.length, 3);
+  run.potions = ['fire_potion', 'fire_potion', 'fire_potion'];
+  expect('いっぱいだとポーションを買えない', buyPotion(c, run, 0), { ok: false, reason: 'full' });
+  run.potions[0] = null;
+  expect('ポーションを買う', [buyPotion(c, run, 0).ok, run.potions[0] === run.shop.potions![0].id], [true, true]);
+  expect('givePotion は空きに入れる', givePotion(run, 'fire_potion'), false);
+}
+/* ----- acts ----- */
+{
+  const run = newRun(c, char, 6);
+  expect('第1幕から', run.act, 0);
+  run.at = { floor: run.map.floors.length, col: run.map.boss.col }; run.encounter = 'b_dragon'; run.hp = 40;
+  const cb = startCombat(c, run); cb.start(); cb.enemies.forEach(e => { e.hp = 0; e.alive = false; }); (cb as unknown as { phase: string }).phase = 'won';
+  finishCombat(c, run, cb);
+  const ch = run.pending?.relicChoices ?? [];
+  expect('第1幕のボス: 報酬と次の幕', [run.phase, run.pending?.nextAct, ch.length, ch.every(id => c.relics.get(id)?.rarity === 'boss')], ['reward', true, 3, true]);
+  leaveNode(run, c);
+  expect('第2幕へ: 新しい地図・階の通し番号', [run.act, run.phase, run.at, run.floorBase], [1, 'map', null, actMap(c, 0).floors + 1]);
+  expect('幕の間で失ったHPの75%回復', run.hp, 40 + Math.ceil((run.maxHp - 40) * 0.75));
+  const node = run.map.floors[0].find(Boolean)!; enterNode(c, run, node);
+  expect('第2幕の遭遇', c.encounters.get(run.encounter!)?.acts, [2]);
+  run.at = { floor: run.map.floors.length, col: run.map.boss.col }; run.encounter = 'b2_warden';
+  const cb2 = startCombat(c, run); cb2.start(); cb2.enemies.forEach(e => { e.hp = 0; e.alive = false; }); (cb2 as unknown as { phase: string }).phase = 'won';
+  finishCombat(c, run, cb2);
+  expect('最後の幕のボスでクリア', run.phase, 'won');
+}
+{
+  const run = newRun(c, char, 7); run.stats.floors = 3;
+  c.events.set('__act2_only', { id: '__act2_only', name: 't', acts: [2], weight: 1e9, pages: { start: { text: '', options: [] } } });
+  expect('第2幕だけのイベントは第1幕に出ない', pickEvent(c, run, new Rng(1))?.id !== '__act2_only', true);
+  startAct(c, run, 1); run.stats.floors = 3;
+  expect('第2幕では出る', pickEvent(c, run, new Rng(1))?.id, '__act2_only');
+  c.events.delete('__act2_only');
+}
+/* ----- css ----- */
+{
+  expect('説明つきのひな形はルールどおり', lintCss(cssStarter('t')).length, 0);
+  const bad = lintCss('.t-button { width: 10px; }\n@import url("https://x/y.css");\n[data-bind="hand"] .card { border-radius: 2px; }');
+  expect('CSSのルール: 大きさ・外部ファイル', bad.map(i => [i.line, i.rule]), [[1, 'layout'], [2, 'external']]);
 }
 
 console.log(fails ? `${fails} 件失敗 / ${passes} 件成功` : `すべて成功（${passes} 件）`);

@@ -96,7 +96,7 @@ export function collectionSection(kind: ListKind): HTMLElement {
 }
 
 function thumbFor(kind: ListKind, item: Record<string, unknown>): HTMLElement {
-  const key = kind === 'cards' ? item.art : kind === 'statuses' || kind === 'relics' ? item.icon : kind === 'enemies' ? (typeof item.art === 'string' ? item.art : (item.art as { idle?: string } | undefined)?.idle) : kind === 'characters' ? (item.portrait as Record<string, string> | undefined)?.normal : kind === 'encounters' ? (() => { const e = ed.project.find('enemies', (item.enemies as string[])?.[0] ?? ''); return e ? (typeof e.item.art === 'string' ? e.item.art : '') : ''; })() : '';
+  const key = kind === 'cards' ? item.art : kind === 'statuses' || kind === 'relics' || kind === 'potions' ? item.icon : kind === 'events' ? item.art : kind === 'enemies' ? (typeof item.art === 'string' ? item.art : (item.art as { idle?: string } | undefined)?.idle) : kind === 'characters' ? (item.portrait as Record<string, string> | undefined)?.normal : kind === 'encounters' ? (() => { const e = ed.project.find('enemies', (item.enemies as string[])?.[0] ?? ''); return e ? (typeof e.item.art === 'string' ? e.item.art : '') : ''; })() : '';
   const url = ed.project.assetUrl(key as string | undefined);
   return h('span', { class: `it-thumb t-${kind}${kind === 'cards' ? ' ct-' + item.type : ''}` }, url ? h('img', { src: url, alt: '', loading: 'lazy' }) : null);
 }

@@ -9,6 +9,7 @@ import type { ListKind } from './project.ts';
 
 const pools = () => [...new Set(ed.project.merged('cards').flatMap(x => (x.item.pools as string[]) ?? []))];
 const vfxNames = (): Opt[] => Object.keys(ed.project.obj('vfx')).filter(k => !k.startsWith('$')).map(k => [k, k]);
+const POTION_RARITIES: Opt[] = [['common', 'コモン'], ['uncommon', 'アンコモン'], ['rare', 'レア'], ['special', '特殊（出ない）']];
 const COST_HELP = '数字、X（残りエネルギーすべて）、空欄で「使用不可」';
 
 export interface KindDef {
@@ -129,7 +130,7 @@ export const KINDS: Record<ListKind, KindDef> = {
 
   encounters: {
     label: '遭遇（敵の組み合わせ）',
-    sub: it => `${POOLS.find(([k]) => k === it.pool)?.[1] ?? it.pool} · ${(it.enemies as string[])?.map(e => (ed.project.find('enemies', e)?.item.name as string) ?? e).join('・')}`,
+    sub: it => `${(it.acts as number[] | undefined)?.length ? `第${(it.acts as number[]).join('・')}幕 · ` : ''}${POOLS.find(([k]) => k === it.pool)?.[1] ?? it.pool} · ${(it.enemies as string[])?.map(e => (ed.project.find('enemies', e)?.item.name as string) ?? e).join('・')}`,
     filters: [{ key: 'pool', label: 'すべての種類', options: POOLS }],
     make: id => ({ id, pool: 'normal', enemies: [ed.project.ids('enemies')[0] ?? ''] }),
     fields: [
@@ -138,6 +139,7 @@ export const KINDS: Record<ListKind, KindDef> = {
       { k: 'int', key: 'weight', label: '出やすさ', optional: true, help: '空なら1' },
       { k: 'int', key: 'minFloor', label: '出る最初の階', optional: true, help: '0 = 1階目' },
       { k: 'int', key: 'maxFloor', label: '出る最後の階', optional: true },
+      { k: 'custom', render: obj => actsPicker(obj) },
       { k: 'asset', key: 'bg', label: '背景（この遭遇だけ）', prefix: 'bg' },
       { k: 'asset', key: 'bgm', label: '音楽（この遭遇だけ）', prefix: 'bgm', audio: true },
     ],
@@ -152,12 +154,30 @@ export const KINDS: Record<ListKind, KindDef> = {
       { k: 'asset', key: 'art', label: '絵', prefix: 'event', help: '780×440（横長）。画面の上に横いっぱいで出る' },
       { k: 'int', key: 'minFloor', label: '出る最初の階', optional: true, help: '0 = 1階目' },
       { k: 'int', key: 'maxFloor', label: '出る最後の階', optional: true },
+      { k: 'custom', render: obj => actsPicker(obj) },
       { k: 'int', key: 'weight', label: '出やすさ', optional: true, help: '空なら1' },
       { k: 'cond', key: 'when', label: '出る条件', help: '例: gold >= 100（空ならいつでも）' },
       { k: 'refList', key: 'chars', label: '出る主人公', to: 'characters', help: '空なら全員' },
       { k: 'bool', key: 'repeatable', label: '1回の冒険で何度も出る' },
       { k: 'custom', render: obj => varsEditor(obj) },
       { k: 'custom', render: obj => pagesEditor(obj) },
+    ],
+  },
+
+  potions: {
+    label: 'ポーション',
+    sub: it => `${POTION_RARITIES.find(([k]) => k === it.rarity)?.[1] ?? it.rarity} · ${CARD_TARGETS.find(([k]) => k === it.target)?.[1] ?? it.target}${(it.mapEffects as unknown[] | undefined)?.length ? ' · 戦闘外も可' : ''}`,
+    filters: [{ key: 'rarity', label: 'すべてのレアリティ', options: POTION_RARITIES }],
+    make: id => ({ id, name: '新しいポーション', icon: '', rarity: 'common', target: 'enemy', effects: [{ op: 'damage', amount: 10, kind: 'raw' }] }),
+    fields: [
+      { k: 'text', key: 'name', label: '名前' },
+      { k: 'asset', key: 'icon', label: 'アイコン', prefix: 'potion', help: '128×128 透過' },
+      { k: 'enum', key: 'rarity', label: 'レアリティ', options: POTION_RARITIES, help: '出やすさはルールの「ポーション」で決める。特殊は報酬・ショップに出ない' },
+      { k: 'enum', key: 'target', label: '対象', options: CARD_TARGETS, help: '「敵1体を選ぶ」は、敵が2体以上いる時に敵をタップして投げる' },
+      { k: 'effects', key: 'effects', label: '戦闘での効果', card: true, help: '空なら戦闘では使えない。ダメージは「そのまま」にすると筋力の影響を受けない' },
+      { k: 'effects', key: 'mapEffects', label: '戦闘の外での効果', run: true, help: '書くとマップ・ショップなどでも使える（回復・最大HPなど）' },
+      { k: 'text', key: 'desc', label: '説明文（手書き）', multiline: true, help: '空なら効果から自動で作る' },
+      { k: 'tags', key: 'pools', label: '出る主人公のプール', help: '空ならすべての主人公に出る', suggest: pools },
     ],
   },
 
@@ -179,6 +199,8 @@ export const KINDS: Record<ListKind, KindDef> = {
       { k: 'tags', key: 'cardPools', label: 'カードプール', help: 'カードとレリックの報酬を引くプール。カード側の「報酬プール」と合わせる', suggest: pools },
       { k: 'custom', render: obj => portraitEditor(obj) },
       { k: 'asset', key: 'selectArt', label: '選択画面の大きな絵（任意）', prefix: 'portrait' },
+      { k: 'int', key: 'potionSlots', label: 'ポーションの枠の数', optional: true, help: '空ならルールの値' },
+      { k: 'refList', key: 'potions', label: '最初のポーション', to: 'potions' },
       { k: 'bool', key: 'locked', label: '非公開（選択画面に出さない）' },
     ],
   },
@@ -202,5 +224,20 @@ function portraitEditor(obj: Record<string, unknown>): HTMLElement {
   draw();
   box.appendChild(grid);
   box.appendChild(h('p', { class: 'help' }, '512×512。normal は必須。hurt（被弾）・pinch（HP30%以下）・happy（勝利）が無ければ normal を使う'));
+  return box;
+}
+
+/** which acts an encounter / event appears in (none checked = every act) */
+function actsPicker(obj: Record<string, unknown>): HTMLElement {
+  const n = Math.max(1, ((ed.project.obj('rules') as { acts?: unknown[] }).acts?.length) ?? 1);
+  const cur = new Set((obj.acts as number[] | undefined) ?? []);
+  const box = h('div', { class: 'fr' }, h('label', null, '出る幕'));
+  const row = h('div', { class: 'inline' });
+  for (let a = 1; a <= n; a++) {
+    const id = 'act-' + Math.random().toString(36).slice(2, 7);
+    const cb = h('input', { type: 'checkbox', id, checked: cur.has(a), on: { change: () => { if ((cb as HTMLInputElement).checked) cur.add(a); else cur.delete(a); if (cur.size) obj.acts = [...cur].sort(); else delete obj.acts; touched(); } } });
+    row.appendChild(h('label', { class: 'chk', for: id }, cb, `第${a}幕`));
+  }
+  box.append(row, h('p', { class: 'help' }, n > 1 ? '選ばなければすべての幕に出る。幕はルールの「幕」で増やす' : '幕は1つだけ（ルールの「幕」で増やせる）'));
   return box;
 }

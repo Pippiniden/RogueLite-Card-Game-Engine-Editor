@@ -1,7 +1,7 @@
 /* npm run sim [-- runs=300] — a simple bot plays whole runs with the current packs and reports balance numbers.
    The bot is deliberately plain (no lookahead), so treat win rates as a lower bound for a careful human. */
 import { loadNodeContent } from './node-content.ts';
-import { newRun, reachable, enterNode, startCombat, finishCombat, takeGold, takeRelic, takeCard, leaveNode, restHeal, upgradeCard } from '../src/engine/run.ts';
+import { newRun, reachable, enterNode, startCombat, finishCombat, takeGold, takeRelic, takeCard, leaveNode, restHeal, upgradeCard, takePotion, takeRelicChoice, actCount } from '../src/engine/run.ts';
 import { canUpgrade } from '../src/engine/content.ts';
 import type { Combat } from '../src/engine/combat.ts';
 import { Rng } from '../src/engine/rng.ts';
@@ -13,7 +13,18 @@ const RUNS = Number(args.runs ?? 300);
 const { content: c } = await loadNodeContent();
 const charId = String(args.char ?? [...c.characters.keys()][0]);
 
-function botTurn(cb: Combat) {
+/** drink potions in hard fights (elite / boss) on turn 1, or when HP runs low */
+function botPotions(cb: Combat, hard: boolean) {
+  if (!(hard && cb.turn === 1) && cb.player.hp > cb.player.maxHp * 0.35) return;
+  cb.potions.forEach((id, i) => {
+    if (!id || !cb.canUsePotion(i)) return;
+    const t = cb.enemies.filter(e => e.alive).sort((a, b) => b.hp - a.hp)[0];
+    cb.usePotion(i, t?.uid);
+    while (cb.choice) cb.choose(cb.choice.cards.slice(0, cb.choice.max).map(x => x.uid));
+  });
+}
+function botTurn(cb: Combat, hard = false) {
+  botPotions(cb, hard);
   for (let guard = 0; guard < 40 && cb.phase === 'player' && !cb.over; guard++) {
     const incoming = cb.enemies.filter(e => e.alive).reduce((s, e) => { const i = cb.intentInfo(e); return s + (i?.damage ?? 0) * (i?.times ?? 1); }, 0);
     const needBlock = incoming - cb.player.block;
@@ -53,7 +64,8 @@ function botChoice(run: RunState, pick: Rng) {
     if (res.status === 'invalid') { if (ch.canCancel) resolveChoice(c, run, []); else break; }
   }
 }
-const stat = { events: 0, shops: 0, spent: 0, removed: 0 };
+const stat = { events: 0, shops: 0, spent: 0, removed: 0, potionsUsed: 0 };
+const actsCleared = Array(actCount(c)).fill(0);
 
 const deaths = new Map<string, number>();
 let wins = 0, floors = 0, turns = 0, battles = 0;
@@ -69,7 +81,7 @@ for (let r = 0; r < RUNS; r++) {
       stat.events++;
       for (let g = 0; g < 10 && run.phase === 'event'; g++) {
         const opts = eventOptions(c, run).filter(o => o.enabled);
-        if (!opts.length) { leaveNode(run); break; }
+        if (!opts.length) { leaveNode(run, c); break; }
         chooseEventOption(c, run, pick.pick(opts).index);
         botChoice(run, pick);
       }
@@ -82,29 +94,35 @@ for (let r = 0; r < RUNS; r++) {
       const items = run.shop!.cards.map((it, i) => ({ i, p: shopPrice(c, run, it.price) })).sort((a, b) => a.p - b.p);
       for (const it of items.slice(0, 2)) if (run.gold >= it.p) buyCard(c, run, it.i);
       stat.spent += g0 - run.gold;
-      leaveNode(run);
+      leaveNode(run, c);
     }
     if (run.phase === 'battle') {
       const cb = startCombat(c, run); cb.start(); battles++;
-      let n = 0; while (!cb.over && n++ < 80) botTurn(cb);
+      const hard = c.encounters.get(run.encounter!)?.pool !== 'normal';
+      let n = 0; while (!cb.over && n++ < 80) botTurn(cb, hard);
       turns += cb.turn;
       finishCombat(c, run, cb);
       if (run.phase === 'lost') deaths.set(run.encounter!, (deaths.get(run.encounter!) || 0) + 1);
     }
     if (run.phase === 'reward' || run.phase === 'treasure') {
-      takeGold(run); takeRelic(c, run); botChoice(run, pick);
+      takeGold(run); takeRelic(c, run); takePotion(run);
+      if (run.pending?.relicChoices?.length) takeRelicChoice(c, run, pick.pick(run.pending.relicChoices));
+      botChoice(run, pick);
+      if (run.pending?.nextAct) actsCleared[run.act ?? 0]++;
       const p = run.pending!;
       if (p.cards.length) takeCard(run, p.cards[pick.int(0, p.cards.length - 1)].uid);
-      leaveNode(run);
+      leaveNode(run, c);
     } else if (run.phase === 'rest') {
       if (run.hp < run.maxHp * 0.6) restHeal(c, run);
       else { const u = run.deck.find(x => canUpgrade(c, x)); if (u) upgradeCard(c, run, u.uid); else restHeal(c, run); }
-      leaveNode(run);
+      leaveNode(run, c);
     }
   }
   if (run.phase === 'won') wins++;
-  floors += run.stats.floors;
+  floors += (run.floorBase ?? 0) + run.stats.floors;
+  if (run.phase === 'won') actsCleared[actCount(c) - 1]++;
 }
 console.log(`${RUNS} ラン（${Date.now() - t0}ms）: 勝率 ${(wins / RUNS * 100).toFixed(1)}% · 平均到達 ${(floors / RUNS).toFixed(1)}階 · 1戦の平均 ${(turns / battles).toFixed(1)}ターン`);
+console.log('幕ごとの突破率: ' + actsCleared.map((n, i) => `第${i + 1}幕 ${(n / RUNS * 100).toFixed(1)}%`).join(' / '));
 console.log(`ショップ ${(stat.shops / RUNS).toFixed(1)}回/ラン（平均 ${stat.shops ? Math.round(stat.spent / stat.shops) : 0}ゴールド使用・削除 ${stat.removed}回）· イベント ${(stat.events / RUNS).toFixed(1)}回/ラン`);
 console.log('負けた遭遇: ' + [...deaths].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(' / '));

@@ -1,40 +1,219 @@
 {
   "maxHand": 10,
   "map": {
-    "floors": 12, "width": 7, "paths": 6,
-    "restFloor": "last", "treasureFloor": 6,
-    "weights": { "battle": 45, "event": 22, "elite": 12, "rest": 12, "shop": 6 },
-    "eliteMinFloor": 4, "restMinFloor": 4,
-    "minFloor": { "event": 1, "shop": 2 }
+    "floors": 12,
+    "width": 7,
+    "paths": 6,
+    "restFloor": "last",
+    "treasureFloor": 6,
+    "weights": {
+      "battle": 45,
+      "event": 22,
+      "elite": 12,
+      "rest": 12,
+      "shop": 6
+    },
+    "eliteMinFloor": 4,
+    "restMinFloor": 4,
+    "minFloor": {
+      "event": 1,
+      "shop": 2
+    }
   },
-  "unknown": { "event": 85, "battle": 10, "shop": 3, "treasure": 2 },
+  "unknown": {
+    "event": 85,
+    "battle": 10,
+    "shop": 3,
+    "treasure": 2
+  },
   "shop": {
-    "cards": 5, "colorless": 2,
-    "rarity": { "common": 54, "uncommon": 37, "rare": 9 },
-    "cardPrice": { "common": [45, 55], "uncommon": [68, 82], "rare": [135, 165] },
+    "cards": 5,
+    "colorless": 2,
+    "rarity": {
+      "common": 54,
+      "uncommon": 37,
+      "rare": 9
+    },
+    "cardPrice": {
+      "common": [
+        45,
+        55
+      ],
+      "uncommon": [
+        68,
+        82
+      ],
+      "rare": [
+        135,
+        165
+      ]
+    },
     "colorlessMarkup": 1.2,
-    "sale": { "count": 1, "factor": 0.5 },
+    "sale": {
+      "count": 1,
+      "factor": 0.5
+    },
     "relics": 3,
-    "relicPrice": { "common": [143, 157], "uncommon": [238, 262], "rare": [285, 315], "shop": [143, 157] },
-    "removal": { "price": 75, "step": 25 }
+    "relicPrice": {
+      "common": [
+        143,
+        157
+      ],
+      "uncommon": [
+        238,
+        262
+      ],
+      "rare": [
+        285,
+        315
+      ],
+      "shop": [
+        143,
+        157
+      ]
+    },
+    "removal": {
+      "price": 75,
+      "step": 25
+    }
   },
   "rewards": {
     "cardChoices": 3,
     "rarity": {
-      "normal": { "common": 63, "uncommon": 33, "rare": 4 },
-      "elite":  { "common": 45, "uncommon": 42, "rare": 13 },
-      "boss":   { "rare": 100 }
+      "normal": {
+        "common": 63,
+        "uncommon": 33,
+        "rare": 4
+      },
+      "elite": {
+        "common": 45,
+        "uncommon": 42,
+        "rare": 13
+      },
+      "boss": {
+        "rare": 100
+      }
     },
-    "gold": { "normal": [10, 20], "elite": [25, 35], "boss": [95, 105] },
+    "gold": {
+      "normal": [
+        10,
+        20
+      ],
+      "elite": [
+        25,
+        35
+      ],
+      "boss": [
+        95,
+        105
+      ]
+    },
     "upgradedChance": 0.05,
-    "relicRarity": { "common": 50, "uncommon": 33, "rare": 17 }
+    "relicRarity": {
+      "common": 50,
+      "uncommon": 33,
+      "rare": 17
+    }
   },
-  "rest": { "healPercent": 30 },
+  "rest": {
+    "healPercent": 30
+  },
   "formations": {
-    "1": [{ "x": 0.5, "y": 0.86 }],
-    "2": [{ "x": 0.28, "y": 0.86 }, { "x": 0.72, "y": 0.82 }],
-    "3": [{ "x": 0.17, "y": 0.88, "scale": 0.9 }, { "x": 0.5, "y": 0.8 }, { "x": 0.83, "y": 0.88, "scale": 0.9 }],
-    "4": [{ "x": 0.13, "y": 0.88, "scale": 0.8 }, { "x": 0.38, "y": 0.8, "scale": 0.85 }, { "x": 0.62, "y": 0.8, "scale": 0.85 }, { "x": 0.87, "y": 0.88, "scale": 0.8 }]
+    "1": [
+      {
+        "x": 0.5,
+        "y": 0.86
+      }
+    ],
+    "2": [
+      {
+        "x": 0.28,
+        "y": 0.86
+      },
+      {
+        "x": 0.72,
+        "y": 0.82
+      }
+    ],
+    "3": [
+      {
+        "x": 0.17,
+        "y": 0.88,
+        "scale": 0.9
+      },
+      {
+        "x": 0.5,
+        "y": 0.8
+      },
+      {
+        "x": 0.83,
+        "y": 0.88,
+        "scale": 0.9
+      }
+    ],
+    "4": [
+      {
+        "x": 0.13,
+        "y": 0.88,
+        "scale": 0.8
+      },
+      {
+        "x": 0.38,
+        "y": 0.8,
+        "scale": 0.85
+      },
+      {
+        "x": 0.62,
+        "y": 0.8,
+        "scale": 0.85
+      },
+      {
+        "x": 0.87,
+        "y": 0.88,
+        "scale": 0.8
+      }
+    ]
   },
-  "sizes": { "small": 0.34, "medium": 0.5, "large": 0.64, "boss": 0.8 }
+  "sizes": {
+    "small": 0.34,
+    "medium": 0.5,
+    "large": 0.64,
+    "boss": 0.8
+  },
+  "potions": {
+    "slots": 3,
+    "dropChance": 40,
+    "dropStep": 10,
+    "rarity": {
+      "common": 65,
+      "uncommon": 25,
+      "rare": 10
+    },
+    "shop": {
+      "count": 3,
+      "price": {
+        "common": [
+          48,
+          52
+        ],
+        "uncommon": [
+          72,
+          78
+        ],
+        "rare": [
+          95,
+          105
+        ]
+      }
+    }
+  },
+  "acts": [
+    {
+      "name": "第一幕 灯火の回廊"
+    },
+    {
+      "name": "第二幕 沈んだ大書庫",
+      "healPercent": 75
+    }
+  ]
 }

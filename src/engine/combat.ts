@@ -13,6 +13,8 @@ export interface CombatSetup {
   relics: string[];
   enemies: string[];
   seeds: { battle: number; ai: number };
+  /** potion belt (null = empty slot) */
+  potions?: (string | null)[];
 }
 
 /** what the screen needs after each step; plain data so it can be cloned and replayed */
@@ -29,6 +31,7 @@ export interface CombatView {
   phase: 'player' | 'enemy' | 'won' | 'lost';
   /** the player must pick cards before anything else happens */
   choice?: ChoiceReq;
+  potions: (string | null)[];
 }
 export interface Frame { events: CombatEvent[]; view: CombatView }
 export interface IntentInfo { intent: Intent; name: string; damage?: number; times?: number }
@@ -49,6 +52,8 @@ export class Combat {
   drawPile: CardInst[] = [];
   discard: CardInst[] = [];
   exhaustPile: CardInst[] = [];
+  /** potion belt; written back to the run when the fight ends */
+  potions: (string | null)[] = [];
   energy = 0;
   maxEnergy: number;
   drawPerTurn: number;
@@ -76,6 +81,7 @@ export class Combat {
     this.maxEnergy = ch.energy;
     this.drawPerTurn = ch.draw;
     this.relics = [...s.relics];
+    this.potions = [...(s.potions ?? [])];
     s.enemies.forEach((id, i) => {
       const d = content.enemies.get(id)!;
       const hp = this.ai.int(d.hp[0], d.hp[1]);
@@ -135,6 +141,37 @@ export class Combat {
     this.pending = null;
     this.drive(gen, picked);
     return this.flush();
+  }
+
+  /* ----- potions ----- */
+  canUsePotion(slot: number): boolean {
+    const d = this.content.potions.get(this.potions[slot] ?? '');
+    return !!d && d.effects.length > 0 && this.phase === 'player' && !this.over && !this.pending;
+  }
+  /** drink the potion in a slot (targetUid for potions aimed at one enemy) */
+  usePotion(slot: number, targetUid?: number): Frame[] {
+    if (!this.canUsePotion(slot)) return [];
+    this.drive(this.potionGen(slot, targetUid));
+    return this.flush();
+  }
+  discardPotion(slot: number) { if (this.potions[slot]) this.potions[slot] = null; }
+  /** put a potion in the first empty slot; false when the belt is full */
+  addPotion(id: string): boolean {
+    const i = this.potions.indexOf(null);
+    if (i < 0 || !this.content.potions.has(id)) return false;
+    this.potions[i] = id;
+    this.emit({ t: 'potion', potion: id, slot: i });
+    return true;
+  }
+  private *potionGen(slot: number, targetUid?: number): Gen {
+    const id = this.potions[slot]!;
+    const d = this.content.potions.get(id)!;
+    this.potions[slot] = null;
+    this.emit({ t: 'potion', potion: id, slot });
+    let target: Combatant | undefined;
+    if (d.target === 'enemy') target = this.enemies.find(e => e.uid === targetUid && e.alive) ?? this.enemies.find(e => e.alive);
+    yield* this.runEffects(d.effects, { source: this.player, target, vars: {}, canAsk: true });
+    if (!this.over) this.fire('potionUsed', this.player, { other: target });
   }
 
   endTurn(): Frame[] {
@@ -197,7 +234,7 @@ export class Combat {
     return JSON.parse(JSON.stringify({
       turn: this.turn, energy: this.energy, maxEnergy: this.maxEnergy, player: this.player, enemies: this.enemies,
       hand: this.hand, draw: this.drawPile, discard: this.discard, exhaust: this.exhaustPile, phase: this.phase,
-      choice: this.pending?.req,
+      choice: this.pending?.req, potions: this.potions,
     }));
   }
 

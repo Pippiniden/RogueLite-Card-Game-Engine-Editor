@@ -3,6 +3,8 @@ import { canUpgrade, cardView } from './content.ts';
 import type { CardInst, DeckChoice, Effect, RunState, Rarity, EventDef, EventOption, ShopState } from './types.ts';
 import type { ParamSpec } from './effects.ts';
 import { evalNum, evalCond } from './expr.ts';
+import { describeCard } from './describe.ts';
+import type { CardDef, PotionDef } from './types.ts';
 import { Rng, deriveSeed } from './rng.ts';
 
 /* ===== Run effects: what happens outside combat =====
@@ -19,7 +21,9 @@ export type RunLog =
   | { t: 'remove'; id: string }
   | { t: 'upgrade'; id: string }
   | { t: 'transform'; from: string; to: string }
-  | { t: 'relic'; id: string };
+  | { t: 'relic'; id: string }
+  | { t: 'potion'; id: string }
+  | { t: 'potionFull'; id: string };
 
 export interface RunCtx {
   c: Content;
@@ -42,7 +46,7 @@ export interface RunOp {
   text?: string;
 }
 
-export const RUN_GROUPS: Record<RunOp['group'], string> = { resource: 'HP・ゴールド', cards: 'デッキ', relic: 'レリック', flow: '組み合わせ・進行', plugin: 'プラグイン' };
+export const RUN_GROUPS: Record<RunOp['group'], string> = { resource: 'HP・ゴールド', cards: 'デッキ', relic: 'レリック・ポーション', flow: '組み合わせ・進行', plugin: 'プラグイン' };
 
 const RARITY_OPTS: [string, string][] = [['', 'ふつうの出やすさで'], ['common', 'コモン'], ['uncommon', 'アンコモン'], ['rare', 'レア']];
 const TYPE_OPTS: [string, string][] = [['', 'どれでも'], ['attack', 'アタック'], ['skill', 'スキル'], ['power', 'パワー'], ['status', '状態異常'], ['curse', '呪い']];
@@ -82,12 +86,48 @@ export function pickRelic(c: Content, run: RunState, rng: Rng, o: { rarity?: str
   return (w ? rng.weighted(cands, r => w[r.rarity] ?? 1) ?? rng.pick(cands) : rng.pick(cands)).id;
 }
 
+/* ----- potions ----- */
+export const DEFAULT_POTIONS = { slots: 3, dropChance: 40, dropStep: 10, rarity: { common: 65, uncommon: 25, rare: 10 }, shop: { count: 3, price: { common: [48, 52], uncommon: [72, 78], rare: [95, 105] } } } as const;
+export const potionRules = (c: Content) => c.rules.potions ?? DEFAULT_POTIONS;
+
+/** a random potion this character can find */
+export function pickPotion(c: Content, run: RunState, rng: Rng, o: { rarity?: string; exclude?: string[] } = {}): string | undefined {
+  const pools = c.characters.get(run.char)?.cardPools ?? [];
+  const cands = [...c.potions.values()].filter(d => d.rarity !== 'special' && !o.exclude?.includes(d.id)
+    && (o.rarity ? d.rarity === o.rarity : true) && (!d.pools?.length || d.pools.some(p => pools.includes(p))));
+  if (!cands.length) return undefined;
+  const w = potionRules(c).rarity as Record<string, number>;
+  return (rng.weighted(cands, d => w[d.rarity] ?? 1) ?? cands[0]).id;
+}
+/** put a potion in the first empty slot; false when the belt is full */
+export function givePotion(run: RunState, id: string): boolean {
+  const belt = run.potions ??= [];
+  const i = belt.indexOf(null);
+  if (i < 0) return false;
+  belt[i] = id;
+  return true;
+}
+export const hasPotionRoom = (run: RunState) => (run.potions ?? []).includes(null);
+export function discardPotion(run: RunState, slot: number) { if (run.potions?.[slot]) run.potions[slot] = null; }
+/** drink a potion outside combat (only potions with mapEffects) */
+export function usePotionOutside(c: Content, run: RunState, slot: number, canAsk = true): { log: RunLog[]; status: 'done' | 'choice' | 'fight' | 'invalid' } {
+  const id = run.potions?.[slot]; const d = id ? c.potions.get(id) : undefined;
+  if (!d?.mapEffects?.length || run.choice) return { log: [], status: 'invalid' };
+  run.potions![slot] = null;
+  const ctx = makeCtx(c, run, 'potion', canAsk);
+  const status = runRunEffects(ctx, d.mapEffects);
+  saveRng(run, ctx.rng);
+  return { log: ctx.log, status };
+}
+
 /** variables for run-level expressions (event conditions, amounts) */
 export function runVars(c: Content, run: RunState): Record<string, number> {
   const v: Record<string, number> = {
     gold: run.gold, hp: run.hp, maxHp: run.maxHp, hpPct: Math.round(run.hp / Math.max(1, run.maxHp) * 100),
     floor: run.stats.floors, deck: run.deck.length, 'deck.count': run.deck.length, relics: run.relics.length,
     removals: run.removals ?? 0,
+    act: (run.act ?? 0) + 1, totalFloor: (run.floorBase ?? 0) + run.stats.floors,
+    potions: (run.potions ?? []).filter(Boolean).length, potionSlots: (run.potions ?? []).length,
     'deck.upgradable': run.deck.filter(x => canUpgrade(c, x)).length,
   };
   for (const t of ['attack', 'skill', 'power', 'status', 'curse']) v[`deck.${t}`] = run.deck.filter(x => cardView(c, x).type === t).length;
@@ -198,6 +238,17 @@ export const RUN_EFFECTS: Record<string, RunOp> = {
       const id = e.relic ? String(e.relic) : pickRelic(ctx.c, ctx.run, ctx.rng, { rarity: String(e.rarity ?? '') || undefined });
       return id ? gainRelic(ctx, id) : undefined;
     } },
+  gainPotion: { label: 'ポーションを得る', group: 'relic',
+    params: { potion: { type: 'potion', label: 'ポーション', help: '空ならランダム' }, rarity: { type: 'enum', default: '', label: 'ランダムの時のレアリティ', options: RARITY_OPTS }, count: { type: 'num', default: 1, label: '数' } },
+    run(ctx, e) {
+      for (let i = 0; i < n(e, 'count', ctx, 1); i++) {
+        const id = e.potion ? String(e.potion) : pickPotion(ctx.c, ctx.run, ctx.rng, { rarity: String(e.rarity ?? '') || undefined });
+        if (!id || !ctx.c.potions.has(id)) return;
+        if (givePotion(ctx.run, id)) ctx.log.push({ t: 'potion', id }); else { ctx.log.push({ t: 'potionFull', id }); return; }
+      }
+    } },
+  addPotionSlots: { label: 'ポーションの枠を増やす', group: 'relic', params: { count: { type: 'num', default: 1, label: '数' } },
+    run(ctx, e) { const belt = ctx.run.potions ??= []; for (let i = 0; i < n(e, 'count', ctx, 1); i++) belt.push(null); } },
   loseRelic: { label: 'レリックを失う', group: 'relic', params: { relic: { type: 'relic', label: 'レリック', help: '空なら持っている中からランダム（初期レリックは除く）' } },
     run(ctx, e) {
       const r = ctx.run;
@@ -313,7 +364,14 @@ export function makeShop(c: Content, run: RunState, rng: Rng): ShopState {
     if (!id) break;
     relics.push({ id, price: price(S.relicPrice[c.relics.get(id)!.rarity as 'common'] ?? S.relicPrice.common) });
   }
-  return { cards, relics, removal: { price: 0 } };
+  const P = potionRules(c);
+  const potions: NonNullable<ShopState['potions']> = [];
+  for (let i = 0; i < P.shop.count; i++) {
+    const id = pickPotion(c, run, rng, { exclude: [] }); if (!id) break;
+    const rar = c.potions.get(id)!.rarity as 'common';
+    potions.push({ id, price: price((P.shop.price as Record<string, [number, number]>)[rar] ?? P.shop.price.common) });
+  }
+  return { cards, relics, potions, removal: { price: 0 } };
 }
 
 export type BuyResult = { ok: false; reason: 'gold' | 'sold' } | { ok: true; log: RunLog[]; status: 'done' | 'choice' | 'fight' };
@@ -334,6 +392,13 @@ export function buyRelic(c: Content, run: RunState, i: number, canAsk = true): B
   saveRng(run, ctx.rng);
   return { ok: true, log: ctx.log, status };
 }
+export function buyPotion(c: Content, run: RunState, i: number): BuyResult | { ok: false; reason: 'full' } {
+  const it = run.shop?.potions?.[i]; if (!it || it.sold) return { ok: false, reason: 'sold' };
+  const p = shopPrice(c, run, it.price); if (run.gold < p) return { ok: false, reason: 'gold' };
+  if (!hasPotionRoom(run)) return { ok: false, reason: 'full' };
+  run.gold -= p; it.sold = true; givePotion(run, it.id);
+  return { ok: true, log: [{ t: 'gold', n: -p }, { t: 'potion', id: it.id }], status: 'done' };
+}
 /** opens the removal picker (pay on confirm) */
 export function startRemoval(c: Content, run: RunState): { ok: boolean; reason?: 'gold' | 'sold' | 'empty' } {
   if (!run.shop || run.shop.removal.used) return { ok: false, reason: 'sold' };
@@ -351,7 +416,8 @@ export function pickEvent(c: Content, run: RunState, rng: Rng): EventDef | undef
   const floor = run.stats.floors - 1;
   const vars = runVars(c, run);
   const seen = run.seenEvents ?? [];
-  const list = [...c.events.values()].filter(ev => (ev.minFloor ?? 0) <= floor && floor <= (ev.maxFloor ?? 999)
+  const act = (run.act ?? 0) + 1;
+  const list = [...c.events.values()].filter(ev => (ev.minFloor ?? 0) <= floor && floor <= (ev.maxFloor ?? 999) && (!ev.acts?.length || ev.acts.includes(act))
     && (!ev.chars?.length || ev.chars.includes(run.char)) && (ev.repeatable || !seen.includes(ev.id))
     && (!ev.when || evalCond(ev.when as never, vars)) && !!ev.pages?.start);
   return rng.weighted(list, ev => ev.weight ?? 1);
@@ -425,12 +491,13 @@ export function describeRun(c: Content, list: Effect[] | undefined, vars?: Recor
       if (key) parts.push(fmt(T[key] ?? '{percent}%で {then}', { percent: pct, miss, then: a, else: b }));
       continue;
     }
-    const key = `run.${e.op}` + (e.op === 'gainRelic' && !e.relic ? '.random' : '') + (['removeCards', 'upgradeCards', 'transformCards', 'duplicateCard'].includes(e.op) && e.select === 'random' ? '.random' : '');
+    const key = `run.${e.op}` + ((e.op === 'gainRelic' && !e.relic) || (e.op === 'gainPotion' && !e.potion) ? '.random' : '') + (['removeCards', 'upgradeCards', 'transformCards', 'duplicateCard'].includes(e.op) && e.select === 'random' ? '.random' : '');
     const vals: Record<string, string> = {};
     for (const k of Object.keys(op.params)) {
       const v = e[k] ?? op.params[k].default;
       if (k === 'card') vals[k] = c.cards.get(String(v))?.name ?? String(v ?? '');
       else if (k === 'relic') vals[k] = c.relics.get(String(v))?.name ?? '';
+      else if (k === 'potion') vals[k] = c.potions.get(String(v))?.name ?? '';
       else if (k === 'encounter') vals[k] = (c.encounters.get(String(v))?.enemies ?? []).map(id => c.enemies.get(id)?.name ?? id).join('・');
       else if (k === 'rarity') vals[k] = v ? c.text.rarities[String(v)] ?? String(v) : '';
       else if (k === 'type' || k === 'filter') vals[k] = v ? c.text.cardTypes[String(v)] ?? String(v) : '';
@@ -442,3 +509,11 @@ export function describeRun(c: Content, list: Effect[] | undefined, vars?: Recor
 }
 const fmt = (tpl: string, v: Record<string, string>) => tpl.replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '').replace(/\s+/g, ' ').trim();
 
+/** description of a potion: its own text, or generated from its effects like a card */
+export function potionText(c: Content, d: PotionDef): string {
+  if (d.desc) return d.desc;
+  const card = { id: d.id, name: d.name, type: 'skill', rarity: 'special', cost: 0, target: d.target, effects: d.effects } as CardDef;
+  const lines = d.effects.length ? describeCard(c, card).map(l => l.map(x => x.t).join('')) : [];
+  if (d.mapEffects?.length) lines.push(d.effects.length ? (c.text.ui['potion.alsoOutside'] ?? '戦闘の外でも使える') : describeRun(c, d.mapEffects));
+  return lines.join('\n');
+}

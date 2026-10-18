@@ -4,6 +4,7 @@
 import { writeFileSync } from 'node:fs';
 import { EFFECTS, EFFECT_GROUPS, TARGET_LABELS } from '../src/engine/effects.ts';
 import { RUN_EFFECTS, RUN_GROUPS } from '../src/engine/run-effects.ts';
+import { CSS_RULES, CSS_PARTS } from '../src/engine/css-guide.ts';
 import { EVENTS, BY, FLAGS, STATS, MOD_OPS, STACKING, DECAY, KEYWORDS, CARD_TARGETS, INTENTS, FX_KINDS, SE_MOMENTS, BGM_SLOTS, VAR_HELP, type Opt } from '../src/editor/labels.ts';
 import { WIDGET_INFO, ACTION_INFO, SKIN_PARTS, SCREEN_IDS } from '../src/game/registry-names.ts';
 import { loadNodeContent } from './node-content.ts';
@@ -95,3 +96,40 @@ optTable('音楽の場面（audio.json → bgm）', BGM_SLOTS);
 
 writeFileSync(new URL('../docs/reference.md', import.meta.url), out.join('\n'));
 console.log(`docs/reference.md: ${Object.keys(EFFECTS).length} effects, ${content.statuses.size} statuses`);
+
+/* ----- docs/css-guide.md ----- */
+const g: string[] = [];
+const q = (...l: string[]) => g.push(...l);
+q('# CSS ガイド（パックの追加CSS）', '',
+  '> このファイルは `npm run docs` が src/engine/css-guide.ts から**自動生成**しています。ルールと部品の一覧は、エディターの「CSS」画面と、書き出した .css ファイルの冒頭にも同じものが入ります。', '',
+  '## しくみ', '',
+  '- パックの `pack.json` に `"styles": ["styles/custom.css"]` と書くと、そのCSSがゲームの組み込みのCSSの**後に**読まれます。後に読むパックのCSSほど強くなります。',
+  '- 色とフォントは theme.json（エディターの「見た目・UIスキン」）、窓枠・ボタン・カード枠を画像にするのは theme.json の `skins`（[asset-spec.md](asset-spec.md#3-uiスキン窓枠ボタンなど)）。CSS はそれ以外の見た目を変えるためのものです。',
+  '- 色の変数を CSS で上書きする時は `:root` ではなく `#stage` に書きます（theme.json の色は `<html>` に直接入るので、`:root` より強い）。',
+  '- 画面ごとに変えたい時は `[data-screen="BATTLE"] …` のように画面IDで絞ります。', '',
+  '## 画面の作り', '',
+  '```html',
+  '<div id="stage">                       <!-- 390×844 の画面。スマホに合わせて縮む -->',
+  '  <div class="q-host">',
+  '    <div class="q-screen" data-screen="BATTLE">',
+  '      <!-- 画面配置の要素: 種類が t-◯◯、IDが data-qid、部品名が data-bind -->',
+  '      <button class="q t-button sk-button" data-qid="E4" data-bind="battle.endTurn">ターン終了</button>',
+  '      <div class="q t-canvas" data-qid="F" data-bind="hand"> <div class="card ct-attack cr-common in-hand">…</div> </div>',
+  '```', '',
+  '位置と大きさ（left / top / width / height）は画面配置ツールの座標がそのまま入ります。CSS で変えるのは見た目だけです。', '',
+  '## 守るルール', '',
+  'エディターの「CSS」と `npm run check` が確かめます。「必ず」はエラー、「なるべく」は注意として出ます。', '');
+for (const r of CSS_RULES) q(`### ${r.sev === 'error' ? '必ず' : 'なるべく'}: ${r.title}`, '', r.text, '');
+q('## 部品の一覧', '');
+let grp = '';
+for (const p of CSS_PARTS) {
+  if (p.group !== grp) { grp = p.group; q(`### ${grp}`, ''); }
+  q(`#### ${p.title}`, '', `\`${p.selector}\``, '', p.desc, '', '```css', `${p.selector} {`, ...p.example.map(x => '  ' + x), '}', '```', '');
+}
+q('## LLM に頼む時', '',
+  '1. エディターの「CSS」→「LLM への依頼文をコピー」で、どう変えたいかを書いてコピーする（ルール・部品の説明・今のCSSが入る）',
+  '2. Claude などに貼り、返ってきたCSSをファイルに保存する',
+  '3. 「読み込む…」で戻す。ルールに反する所は一覧に出るので、その行を直すか、もう一度頼む', '',
+  '書き出した .css ファイルの冒頭にもルールが入っているので、ファイルをそのまま渡しても同じように守ってもらえます。');
+writeFileSync(new URL('../docs/css-guide.md', import.meta.url), g.join('\n'));
+console.log(`docs/css-guide.md: ${CSS_RULES.length} rules, ${CSS_PARTS.length} parts`);

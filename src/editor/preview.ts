@@ -8,7 +8,7 @@ import { playtest } from './playtest.ts';
 import type { ListKind } from './project.ts';
 import type { EventDef } from '../engine/types.ts';
 import { newRun } from '../engine/run.ts';
-import { startEvent, fillText, describeRun, eventVars } from '../engine/run-effects.ts';
+import { startEvent, fillText, describeRun, eventVars, potionText } from '../engine/run-effects.ts';
 import { evalCond } from '../engine/expr.ts';
 
 /* Live previews next to the form, drawn with the game's own card renderer and theme. */
@@ -90,6 +90,16 @@ export function preview(kind: ListKind, id: string): HTMLElement {
       const counts = new Map<string, number>(); d.deck.forEach(x => counts.set(x, (counts.get(x) ?? 0) + 1));
       box.appendChild(h('div', { class: 'pv-deck' }, [...counts].map(([cid, n]) => { const el = renderCard(c, { uid: 0, id: cid, up: false }); return h('div', { class: 'pv-deck-item' }, el, h('span', { class: 'mono' }, `×${n}`)); })));
       box.appendChild(h('div', { class: 'pv-actions' }, button('この主人公で冒険テスト', () => playtest({ run: { char: id } }), 'primary sm')));
+      break;
+    }
+    case 'potions': {
+      const d = c.potions.get(id); if (!d) break;
+      const icon = c.assets.get(d.icon ?? '');
+      box.append(h('div', { class: 'pv-relic' }, icon ? h('img', { src: icon, alt: '' }) : h('span', { class: 'thumb empty' }, 'なし'),
+        h('div', null, h('b', null, d.name), h('p', null, potionText(c, d)))));
+      const enemy = [...c.encounters.values()].find(e => e.pool === 'normal' && e.enemies.length > 1)?.id ?? [...c.encounters.keys()][0];
+      box.appendChild(h('div', { class: 'pv-actions' }, button('このポーションで戦闘テスト', () => playtest({ battle: { encounter: enemy, char: firstChar(), potions: [id, id, id] } }), 'primary sm'),
+        d.mapEffects?.length ? button('マップで試す', () => playtest({ run: { char: firstChar(), potions: [id, id] } }), 'sm') : null));
       break;
     }
     case 'events': {

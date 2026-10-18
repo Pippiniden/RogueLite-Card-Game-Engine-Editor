@@ -3,12 +3,13 @@ import type { Node } from './layout.ts';
 import type { WidgetName, RunWidgetName } from './registry-names.ts';
 import type { CardInst, Combatant, MapNode } from '../engine/types.ts';
 import { canUpgrade } from '../engine/content.ts';
-import { currentNode, reachable, enterNode, takeGold, takeRelic, takeCard, upgradeCard } from '../engine/run.ts';
+import { currentNode, reachable, enterNode, takeGold, takeRelic, takeCard, upgradeCard, takePotion, actCount, actDef } from '../engine/run.ts';
 import { statusText, glossary } from '../engine/describe.ts';
 import { img, assetUrl } from './assets.ts';
 import { renderCard, fillCard } from './cards.ts';
 import { skinClass } from './skins.ts';
 import { beginBattle, selectCard, playCard, tapEnemy } from './battle.ts';
+import { potionText } from '../engine/run-effects.ts';
 
 /* ===== Widgets: what fills an element with a given bind.
    update() runs on every refresh, so each one only touches the DOM when its data changed.
@@ -151,7 +152,7 @@ function drawEnemies(n: Node, app: App) {
   const el = n.el, W = n.spec.w, H = n.spec.h, R = app.content.rules;
   const form = R.formations[String(v.enemies.length)] ?? R.formations['1'];
   const selected = app.combat?.hand.find(c => c.uid === app.ui.selected);
-  const targeting = !!selected && app.combat!.view(selected).target === 'enemy';
+  const targeting = (!!selected && app.combat!.view(selected).target === 'enemy') || app.ui.potionTarget !== null;
   el.classList.toggle('targeting', targeting);
   v.enemies.forEach((e, i) => {
     let box = el.querySelector<HTMLElement>(`.enemy[data-uid="${e.uid}"]`);
@@ -348,7 +349,12 @@ const BUILTIN: Record<Exclude<WidgetName, RunWidgetName>, Widget> = {
   'player.hpBlock': { update(n, app) { const p = app.view?.player; if (p) gauge(n.el, p.hp, p.maxHp, p.block); } },
   'player.statuses': { update(n, app) { statusIcons(app, n.el, app.view?.player.statuses ?? {}, () => app.showInfo({ kind: 'player' })); } },
 
-  'run.floor': text(app => { const at = app.run?.at; if (!at) return app.t('hud.floor', { floor: 0 }); return at.floor >= app.run!.map.floors.length ? app.content.text.nodes.boss ?? 'BOSS' : app.t('hud.floor', { floor: at.floor + 1 }); }),
+  'run.floor': text(app => {
+    const run = app.run, at = run?.at;
+    const floor = (f: number) => actCount(app.content) > 1 ? app.t('hud.floorAct', { act: (run?.act ?? 0) + 1, floor: f }) : app.t('hud.floor', { floor: f });
+    if (!at) return floor(0);
+    return at.floor >= run!.map.floors.length ? app.content.text.nodes.boss ?? 'BOSS' : floor(at.floor + 1);
+  }),
   'run.gold': { update(n, app) { paint(n.el, String(app.run?.gold), () => { n.el.innerHTML = `<span class="coin"></span>${app.run?.gold ?? 0}`; }); } },
   'run.relics': { update: relicRow },
 
@@ -406,16 +412,32 @@ const BUILTIN: Record<Exclude<WidgetName, RunWidgetName>, Widget> = {
 
   'info.body': { update: drawInfo },
 
-  'reward.title': text(app => app.run?.phase === 'treasure' ? app.t('treasure.title') : app.t('reward.title')),
+  'reward.title': {
+    update(n, app) {
+      const t = app.run?.phase === 'treasure' ? app.t('treasure.title') : app.run?.pending?.nextAct ? app.t('act.cleared', { name: actDef(app.content, app.run.act ?? 0).name }) : app.t('reward.title');
+      if (n.el.textContent !== t) n.el.textContent = t;
+      n.el.classList.toggle('long', [...t].length > 7);
+    },
+  },
   'reward.items': {
     update(n, app) {
       const p = app.run?.pending; const c = app.content;
-      paint(n.el, JSON.stringify(p ? [p.goldTaken, p.relicTaken, p.gold, p.relic] : null), () => {
+      const full = !(app.run?.potions ?? []).includes(null);
+      paint(n.el, JSON.stringify(p ? [p.goldTaken, p.relicTaken, p.gold, p.relic, p.potion, p.potionTaken, full, p.relicChoices] : null), () => {
         n.el.innerHTML = '';
         if (!p) return;
         const item = (html: string, se: string, on: () => void) => { const b = document.createElement('button'); b.type = 'button'; b.className = `reward-item ${skinClass('reward.item')}`; b.innerHTML = html; b.addEventListener('click', ev => { ev.stopPropagation(); on(); app.sound.se(se); app.save(); app.refresh(); }); n.el.appendChild(b); };
         if (p.gold && !p.goldTaken) item(`<span class="coin"></span>${esc(app.t('reward.gold', { gold: p.gold }))}`, 'coin', () => takeGold(app.run!));
         if (p.relic && !p.relicTaken) { const r = c.relics.get(p.relic)!; item(`<img src="${assetUrl(c, r.icon, r.name)}" alt=""><span><b>${esc(r.name)}</b><small>${esc(r.desc)}</small></span>`, 'relic', () => takeRelic(c, app.run!)); }
+        if (p.potion && !p.potionTaken) {
+          const d = c.potions.get(p.potion);
+          if (d) item(`<img src="${assetUrl(c, d.icon, d.name)}" alt=""><span><b>${esc(app.t('reward.potion', { name: d.name }))}</b><small>${esc(full ? app.t('potion.full') : potionText(c, d))}</small></span>`, full ? 'click' : 'relic', () => { if (!takePotion(app.run!)) app.banner(app.t('potion.full'), 1100); });
+        }
+        if (p.relicChoices?.length && !p.relicTaken) {
+          // a separate sheet: three relics with their full text do not fit in this list on a phone
+          const r0 = c.relics.get(p.relicChoices[0]);
+          item(`<img src="${assetUrl(c, r0?.icon, r0?.name)}" alt=""><span><b>${esc(app.t('reward.bossRelic'))}</b><small>${esc(p.relicChoices.map(id => c.relics.get(id)?.name ?? id).join('・'))}</small></span>`, 'click', () => { app.ui.relicPick = true; });
+        }
       });
     },
   },
@@ -434,7 +456,7 @@ const BUILTIN: Record<Exclude<WidgetName, RunWidgetName>, Widget> = {
       });
     },
   },
-  'reward.next': text(app => { const p = app.run?.pending; return p && p.cards.length && !p.cardTaken ? app.t('reward.skip') : app.t('reward.next'); }),
+  'reward.next': text(app => { const p = app.run?.pending; return p && p.cards.length && !p.cardTaken ? app.t('reward.skip') : p?.nextAct ? app.t('reward.nextAct') : app.t('reward.next'); }),
 
   'rest.art': { update(n, app) { paint(n.el, 'fire', () => { n.el.innerHTML = ''; n.el.classList.add('campfire'); n.el.appendChild(img(app.content, 'scene.campfire', app.t('rest.title'))); }); } },
   'rest.title': text(app => app.t('rest.title')),
@@ -470,7 +492,11 @@ const BUILTIN: Record<Exclude<WidgetName, RunWidgetName>, Widget> = {
 
   'result.portrait': { update(n, app) { const ch = char(app); if (!ch) return; const won = app.run?.phase === 'won'; paint(n.el, String(won), () => { n.el.innerHTML = ''; n.el.classList.add('portrait', 'portrait-lg'); n.el.appendChild(img(app.content, won ? ch.portrait.happy ?? ch.portrait.normal : ch.portrait.hurt ?? ch.portrait.normal, ch.name)); }); } },
   'result.title': text(app => app.run?.phase === 'won' ? app.t('result.won') : app.t('result.lost')),
-  'result.stats': text(app => { const s = app.run?.stats; return s ? app.t('result.stats', { floors: s.floors, kills: s.kills, elites: s.elites }) : ''; }),
+  'result.stats': text(app => {
+    const run = app.run, s = run?.stats; if (!s) return '';
+    if (actCount(app.content) > 1) return app.t('result.statsAct', { act: (run.act ?? 0) + 1, floor: s.floors, kills: s.kills, elites: s.elites, floors: (run.floorBase ?? 0) + s.floors });
+    return app.t('result.stats', { floors: s.floors, kills: s.kills, elites: s.elites });
+  }),
 };
 
 /** every widget the layout can bind to (built-in + plugins) */

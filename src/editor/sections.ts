@@ -28,6 +28,40 @@ const page = (title: string, intro: string, ...body: (Node | null)[]) => h('div'
 const card = (title: string, ...body: (Node | null | string)[]) => h('section', { class: 'box' }, h('h3', null, title), ...body);
 
 /* ----- rules ----- */
+/** the run's acts: names, map overrides, heal between acts, art and music per act */
+function actsCard(): HTMLElement {
+  const R = 'rules' as const;
+  const box = h('div', { class: 'acts' });
+  const draw = () => {
+    clear(box);
+    const acts = (val(R, ['acts']) as Obj[] | undefined) ?? [{ name: '' }];
+    const save = () => put(R, ['acts'], acts);
+    acts.forEach((a, i) => {
+      const map = (a.map as Obj | undefined) ?? {};
+      const mapNum = (k: string, label: string) => h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, label),
+        input(map[k] as number, v => { if (v === '') delete map[k]; else map[k] = Number(v); a.map = Object.keys(map).length ? map : undefined; save(); }, { type: 'number', class: 'mono num', placeholder: String(val(R, ['map', k]) ?? '') }));
+      const art = (group: 'backgrounds' | 'bgm', id: string, label: string, audio: boolean) => {
+        const holder: Obj = { v: (a[group] as Obj | undefined)?.[id] };
+        return h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, label), assetPicker(holder, 'v', audio ? (id === 'MAP' ? 'bgm' : 'bgm') : 'bg', audio, v => {
+          const m = (a[group] as Obj | undefined) ?? {}; if (v) m[id] = v; else delete m[id]; a[group] = Object.keys(m).length ? m : undefined; save();
+        }));
+      };
+      box.appendChild(h('div', { class: 'act' },
+        h('div', { class: 'act-head' }, h('b', null, `第${i + 1}幕`),
+          input(a.name as string, v => { a.name = v; save(); }, { placeholder: '幕の名前（入る時に帯で出る）' }),
+          acts.length > 1 ? button('×', () => { acts.splice(i, 1); save(); draw(); }, 'icon danger', { title: 'この幕を削除' }) : null),
+        h('div', { class: 'inline' }, mapNum('floors', '階層の数'), mapNum('width', '横幅'), mapNum('paths', '道の本数'),
+          i ? h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, '入る時に回復(%)'), input(a.healPercent as number, v => { a.healPercent = v === '' ? undefined : Number(v); save(); }, { type: 'number', class: 'mono num', placeholder: '100', min: 0, max: 100 })) : null),
+        h('div', { class: 'inline' }, art('backgrounds', 'MAP', 'マップの背景', false), art('backgrounds', 'BATTLE', '戦闘の背景', false), art('bgm', 'MAP', 'マップの音楽', true), art('bgm', 'battle', '戦闘の音楽', true), art('bgm', 'boss', 'ボス戦の音楽', true)),
+        h('div', { class: 'btnrow' }, button(`▶ 第${i + 1}幕から試す`, () => playtest({ run: { char: ed.project.ids('characters')[0] ?? '', act: i + 1 } }), 'sm'))));
+    });
+    box.appendChild(button('＋ 幕を追加', () => { acts.push({ name: `第${acts.length + 1}幕`, healPercent: 75 }); save(); draw(); }, 'sm'));
+  };
+  draw();
+  return h('section', { class: 'box' }, h('h3', null, '幕'),
+    h('p', { class: 'help' }, 'ボスを倒すと次の幕へ進みます（最後の幕のボスでクリア）。遭遇とイベントは「出る幕」で幕を選びます（選ばなければすべての幕）。空欄の数値はマップの設定と同じ。'),
+    box);
+}
 const NODE_KINDS: [string, string][] = [['battle', '戦闘'], ['event', '？'], ['elite', 'エリート'], ['rest', '焚き火'], ['shop', 'ショップ']];
 export function rulesSection(): HTMLElement {
   const R = 'rules' as const;
@@ -84,6 +118,14 @@ export function rulesSection(): HTMLElement {
       row('通常戦のゴールド', gold('normal')), row('エリート戦のゴールド', gold('elite')), row('ボス戦のゴールド', gold('boss')),
       row('レリックのレアリティ比', h('div', { class: 'inline' }, ['common', 'uncommon', 'rare'].map(k => h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, k), numIn(R, ['rewards', 'relicRarity', k], { min: 0 })))), '宝箱・エリート・イベントのレリック。空なら全部同じ確率'))),
     card('焚き火', h('div', { class: 'fields' }, row('休むと回復する割合(%)', numIn(R, ['rest', 'healPercent'], { min: 0, max: 100 })))),
+    actsCard(),
+    card('ポーション', h('div', { class: 'fields' },
+      row('最初の枠の数', numIn(R, ['potions', 'slots'], { min: 0, max: 8 }), '主人公ごとに変える時は主人公の「ポーションの枠の数」'),
+      row('戦闘の後に出る確率(%)', numIn(R, ['potions', 'dropChance'], { min: 0, max: 100 })),
+      row('確率の増減(%)', numIn(R, ['potions', 'dropStep'], { min: 0, max: 100 }), '出たら下がり、出なかったら上がる'),
+      row('レアリティ比', h('div', { class: 'inline' }, ['common', 'uncommon', 'rare'].map(k => h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, k), numIn(R, ['potions', 'rarity', k], { min: 0 }))))),
+      row('ショップに並ぶ数', numIn(R, ['potions', 'shop', 'count'], { min: 0 })),
+      row('ショップの値段', h('div', { class: 'inline' }, ['common', 'uncommon', 'rare'].map(k => h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, k), pair(['potions', 'shop', 'price', k]))))))),
     card('敵の大きさ（敵の配置領域の高さに対する割合）', h('div', { class: 'inline' }, ['small', 'medium', 'large', 'boss'].map(k => h('span', { class: 'ep' }, h('span', { class: 'ep-l' }, k), numIn(R, ['sizes', k], { step: 0.02 }))))),
     card('陣形（敵の足元の位置。x・y は敵の配置領域の 0〜1）', form()));
 }
@@ -170,6 +212,7 @@ const SPEC: Record<string, { label: string; w?: number; h?: number; ratio?: numb
   card: { label: 'カードの絵', w: 640, h: 360, ratio: 16 / 9, note: '640×360（16:9）' },
   status: { label: '状態アイコン', w: 128, h: 128, note: '128×128 透過' },
   relic: { label: 'レリック', w: 128, h: 128, note: '128×128 透過' },
+  potion: { label: 'ポーション', w: 128, h: 128, note: '128×128 透過' },
   intent: { label: '敵の予告', w: 128, h: 128, note: '128×128 透過' },
   node: { label: 'マップのノード', w: 128, h: 128, note: '128×128 透過' },
   scene: { label: '場面の絵', note: '400×400 透過（焚き火・店主など）' },

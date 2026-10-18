@@ -15,7 +15,7 @@ export type ParamType =
   | 'enum'       // one of options
   | 'status' | 'card' | 'cardOrSelf'
   | 'target'
-  | 'relic' | 'encounter' | 'page'   // run effects: relic id, encounter id, event page id
+  | 'relic' | 'encounter' | 'page' | 'potion'   // run effects: relic id, encounter id, event page id, potion id
   | 'effects';   // nested effect list
 
 export interface ParamSpec {
@@ -256,6 +256,21 @@ export const EFFECTS: Record<string, EffectOp> = {
     params: { amount: { type: 'num', required: true, label: '量' } },
     defaultTo: null,
     run(cb, ctx, e) { if (ctx.source.side === 'player') cb.gainEnergy(num(e, 'amount', ctx)); },
+  },
+  gainPotion: {
+    label: 'ポーションを得る', group: 'run',
+    params: { potion: { type: 'potion', label: 'ポーション', help: '空ならランダム' }, count: { type: 'num', default: 1, label: '数' } },
+    defaultTo: null,
+    run(cb, ctx, e) {
+      if (ctx.source.side !== 'player') return;
+      const pools = cb.content.characters.get(cb.player.def)?.cardPools ?? [];
+      const all = [...cb.content.potions.values()].filter(d => d.rarity !== 'special' && (!d.pools?.length || d.pools.some(p => pools.includes(p))));
+      const w = cb.content.rules.potions?.rarity ?? { common: 65, uncommon: 25, rare: 10 };
+      for (let i = 0; i < num(e, 'count', ctx, 1); i++) {
+        const id = e.potion ? String(e.potion) : cb.rng.weighted(all, d => w[d.rarity] ?? 1)?.id;
+        if (!id || !cb.addPotion(id)) break;
+      }
+    },
   },
   gainGold: {
     label: 'ゴールドを得る', group: 'run',

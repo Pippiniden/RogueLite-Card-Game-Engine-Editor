@@ -7,6 +7,7 @@ import { WIDGETS } from './widgets.ts';
 import { ACTIONS } from './actions.ts';
 import { Sound } from './audio.ts';
 import { backgroundFor } from './skins.ts';
+import { actDef } from '../engine/run.ts';
 import type { ScreenId } from './registry-names.ts';
 
 /* ===== App: owns the current screen, the run, the battle and the UI state ===== */
@@ -33,9 +34,17 @@ export interface UiState {
   /** current tab on screens with tabs (show="tab:<name>") */
   tab: string;
   /** shop item being confirmed */
-  shopItem: { kind: 'card' | 'relic'; i: number } | null;
+  shopItem: { kind: 'card' | 'relic' | 'potion'; i: number } | null;
   /** what the shopkeeper says right now */
   shopSay: string;
+  /** show the act name when the map opens (a new act just started) */
+  actBanner: boolean;
+  /** potion slot whose menu is open */
+  potion: number | null;
+  /** potion waiting for an enemy to be tapped */
+  potionTarget: number | null;
+  /** the boss relic sheet is open */
+  relicPick: boolean;
 }
 
 const SAVE_KEY = 'rlce/run-v1';
@@ -65,7 +74,7 @@ export class App {
     this.stage = stage;
     this.vfx = new Vfx(content.vfx, stage);
     this.sound = new Sound(content);
-    this.ui = { open: new Set(), info: null, banner: '', face: 'normal', selected: null, pile: 'draw', busy: false, restDone: false, charId: this.playableCharacters()[0]?.id ?? '', picked: new Set(), tab: 'cards', shopItem: null, shopSay: '' };
+    this.ui = { open: new Set(), info: null, banner: '', face: 'normal', selected: null, pile: 'draw', busy: false, restDone: false, charId: this.playableCharacters()[0]?.id ?? '', picked: new Set(), tab: 'cards', shopItem: null, shopSay: '', actBanner: false, potion: null, potionTarget: null, relicPick: false };
   }
 
   /** UI text from text.<lang>.json → ui, with {name} placeholders */
@@ -80,12 +89,13 @@ export class App {
     const spec = this.layout.screens.get(id);
     if (!spec) { console.error(`画面 ${id} が layout にありません`); return; }
     this.ui.open.clear(); this.ui.info = null; this.ui.selected = null; this.ui.banner = '';
-    this.ui.picked.clear(); this.ui.shopItem = null; this.ui.shopSay = ''; this.ui.tab = 'cards';
+    this.ui.picked.clear(); this.ui.shopItem = null; this.ui.shopSay = ''; this.ui.tab = 'cards'; this.ui.potion = null; this.ui.potionTarget = null; this.ui.relicPick = false;
     const built = buildScreen(spec);
     this.screen?.root.remove();
     this.screen = built;
     const encBg = id === 'BATTLE' && this.run?.encounter ? this.content.encounters.get(this.run.encounter)?.bg : undefined;
-    const bg = backgroundFor(this.content, id, encBg);
+    const act = actDef(this.content, this.run?.act ?? 0);
+    const bg = backgroundFor(this.content, id, encBg ?? act.backgrounds?.[id]);
     if (bg) Object.assign(built.root.style, { backgroundImage: `url("${bg}")`, backgroundSize: 'cover', backgroundPosition: 'center' });
     this.stage.querySelector('.q-host')!.appendChild(built.root);
     for (const n of built.nodes) {
@@ -98,14 +108,18 @@ export class App {
       const show = this.screen?.byId.get(id)?.spec.attrs.show;
       if (show === 'choice' || show === 'deckChoice') return; // a choice must be answered (or cancelled with its button)
       if (show === 'shopItem') { this.ui.shopItem = null; this.refresh(); return; }
+      if (show === 'potion') { this.ui.potion = null; this.refresh(); return; }
+      if (show === 'relicChoice') { this.ui.relicPick = false; this.refresh(); return; }
       this.close(id);
     }));
     this.refresh();
-    this.sound.bgm(id === 'BATTLE' ? this.battleMusic() : id);
+    this.sound.bgm(id === 'BATTLE' ? this.battleMusic() : act.bgm?.[id] ?? id);
+    if (id === 'MAP' && this.ui.actBanner) { this.ui.actBanner = false; this.banner(this.t('act.start', { name: act.name }), 1800); }
   }
   private battleMusic() {
     const enc = this.run?.encounter ? this.content.encounters.get(this.run.encounter) : undefined;
-    return enc?.bgm ?? (enc?.pool === 'boss' ? 'boss' : enc?.pool === 'elite' ? 'elite' : 'battle');
+    const slot = enc?.pool === 'boss' ? 'boss' : enc?.pool === 'elite' ? 'elite' : 'battle';
+    return enc?.bgm ?? actDef(this.content, this.run?.act ?? 0).bgm?.[slot] ?? slot;
   }
 
   private wireOn(n: Node) {
@@ -161,6 +175,9 @@ export class App {
       case 'deckChoice': return !!this.run?.choice;
       case 'deckChoiceCancel': return !!this.run?.choice?.canCancel;
       case 'shopItem': return !!this.ui.shopItem;
+      case 'potion': return this.ui.potion !== null;
+      case 'relicChoice': return this.ui.relicPick && !!this.run?.pending?.relicChoices && !this.run.pending.relicTaken;
+      case 'multiAct': return (this.content.rules.acts?.length ?? 1) > 1;
       default: return name.startsWith('tab:') ? this.ui.tab === name.slice(4) : false;
     }
   }

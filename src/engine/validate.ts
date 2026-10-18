@@ -1,6 +1,7 @@
 import type { Content } from './content.ts';
 import { EFFECTS, type ParamSpec } from './effects.ts';
 import { RUN_EFFECTS } from './run-effects.ts';
+import { lintCss } from './css-guide.ts';
 import { checkExpr } from './expr.ts';
 import type { Effect, Trigger, Modifier } from './types.ts';
 import { parseDoc, lintScreen } from '../game/qlayout-core.js';
@@ -10,7 +11,7 @@ import { WIDGET_NAMES, ACTION_NAMES, SCREEN_IDS, SKIN_PARTS } from '../game/regi
 
 export interface Issue { sev: 'error' | 'warn'; kind: string; id: string; msg: string }
 
-const EVENTS = ['battleStart', 'battleEnd', 'turnStart', 'turnEnd', 'cardPlayed', 'cardDrawn', 'cardExhausted', 'cardDiscarded', 'shuffle', 'attacked', 'attackDealt', 'damaged', 'blockGained', 'debuffApplied', 'statusGained', 'death'];
+const EVENTS = ['battleStart', 'battleEnd', 'turnStart', 'turnEnd', 'cardPlayed', 'cardDrawn', 'cardExhausted', 'cardDiscarded', 'shuffle', 'attacked', 'attackDealt', 'damaged', 'blockGained', 'debuffApplied', 'statusGained', 'death', 'potionUsed'];
 const STATS = ['attackDealt', 'attackTaken', 'blockGained', 'hpLoss', 'drawPerTurn', 'energyPerTurn', 'healReceived'];
 const TARGETS = ['target', 'self', 'allEnemies', 'randomEnemy', 'allAllies', 'all'];
 
@@ -35,6 +36,7 @@ export function validateContent(c: Content, extra: { widgets?: string[]; actions
         if ((spec.type === 'card' || spec.type === 'cardOrSelf') && v !== '$self' && !c.cards.has(String(v))) err(kind, id, `${at}: カード「${v}」がありません`);
         if (spec.type === 'enum' && spec.options && !spec.options.some(([o]) => o === v)) err(kind, id, `${at} ${spec.label}: 「${v}」は選択肢にありません`);
         if (spec.type === 'relic' && !c.relics.has(String(v))) err(kind, id, `${at}: レリック「${v}」がありません`);
+        if (spec.type === 'potion' && !c.potions.has(String(v))) err(kind, id, `${at}: ポーション「${v}」がありません`);
         if (spec.type === 'encounter' && !c.encounters.has(String(v))) err(kind, id, `${at}: 遭遇「${v}」がありません`);
         if (spec.type === 'page' && pages && !pages.includes(String(v))) err(kind, id, `${at}: ページ「${v}」がありません`);
         if (spec.type === 'effects') effects(kind, id, `${at}.${k}`, v as Effect[]);
@@ -105,6 +107,20 @@ export function validateContent(c: Content, extra: { widgets?: string[]; actions
     if (!c.rules.formations[String(d.enemies.length)]) err('encounters', d.id, `敵${d.enemies.length}体の陣形がルールにありません`);
   }
   for (const p of ['normal', 'elite', 'boss']) if (![...c.encounters.values()].some(e => e.pool === p)) err('encounters', p, `「${p}」の遭遇が1つもありません`);
+  // acts: every act needs its own normal / elite / boss encounters (encounters without "acts" count for every act)
+  const acts = Math.max(1, c.rules.acts?.length ?? 1);
+  for (let a = 1; a <= acts; a++) for (const p of ['normal', 'elite', 'boss']) {
+    if (![...c.encounters.values()].some(e => e.pool === p && (!e.acts?.length || e.acts.includes(a)))) (p === 'boss' ? err : warn)('encounters', `act${a}`, `第${a}幕に「${p}」の遭遇がありません${p === 'boss' ? '' : '（他の幕の遭遇を使います）'}`);
+  }
+  for (const e of c.encounters.values()) e.acts?.forEach(a => { if (a < 1 || a > acts) warn('encounters', e.id, `第${a}幕はルールにありません（幕は ${acts} つ）`); });
+  for (const e of c.events.values()) e.acts?.forEach(a => { if (a < 1 || a > acts) warn('events', e.id, `第${a}幕はルールにありません（幕は ${acts} つ）`); });
+  if (acts > 1 && ![...c.relics.values()].some(r => r.rarity === 'boss')) warn('relics', '-', 'ボスのレリックが1つもないので、幕の間の報酬にレリックが出ません');
+  for (const d of c.potions.values()) {
+    effects('potions', d.id, '戦闘での効果', d.effects);
+    runEffects('potions', d.id, '戦闘の外での効果', d.mapEffects);
+    if (!d.effects?.length && !d.mapEffects?.length) err('potions', d.id, '効果がないので使えません');
+    asset('potions', d.id, d.icon);
+  }
   if (!c.characters.size) err('characters', '-', '主人公が1人もいません');
   for (const d of c.characters.values()) {
     d.deck.forEach(id => { if (!c.cards.has(id)) err('characters', d.id, `初期デッキのカード「${id}」がありません`); });
@@ -119,6 +135,9 @@ export function validateContent(c: Content, extra: { widgets?: string[]; actions
     if (!(part in SKIN_PARTS)) warn('theme', part, `スキン部品「${part}」はゲームで使われていません`);
     if (!c.assets.has(s.image)) warn('theme', part, `スキンの画像「${s.image}」が素材一覧にありません（CSSで表示）`);
   }
+
+  // pack stylesheets
+  for (const st of c.styles) for (const i of lintCss(st.text)) out.push({ sev: i.sev, kind: 'styles', id: `${st.path.replace(/^.*packs\//, '')}:${i.line}`, msg: i.msg });
 
   // layout
   const doc = parseDoc(c.layout);

@@ -64,7 +64,8 @@ export interface Modifier { stat: StatName; op: 'add' | 'mul' | 'cap'; value: Nu
 export type EventName =
   | 'battleStart' | 'battleEnd' | 'turnStart' | 'turnEnd'
   | 'cardPlayed' | 'cardDrawn' | 'cardExhausted' | 'cardDiscarded' | 'shuffle'
-  | 'attacked' | 'attackDealt' | 'damaged' | 'blockGained' | 'debuffApplied' | 'statusGained' | 'death';
+  | 'attacked' | 'attackDealt' | 'damaged' | 'blockGained' | 'debuffApplied' | 'statusGained' | 'death'
+  | 'potionUsed';
 /** whose event fires the trigger, relative to the owner: self (default), opponent, ally, any */
 export type EventBy = 'self' | 'opponent' | 'ally' | 'any';
 export interface Trigger {
@@ -154,8 +155,50 @@ export interface EncounterDef {
   weight?: number;
   minFloor?: number;
   maxFloor?: number;
+  /** acts (1, 2, 3…) this encounter appears in; empty = every act */
+  acts?: number[];
   bg?: string;
   bgm?: string;
+}
+
+/* ----- potions ----- */
+export interface PotionDef {
+  id: string;
+  name: string;
+  icon?: string;
+  rarity: 'common' | 'uncommon' | 'rare' | 'special';
+  /** who it is aimed at in combat (like a card) */
+  target: CardTarget;
+  /** combat effects (empty = cannot be used in combat) */
+  effects: Effect[];
+  /** run effects when used outside combat (empty = combat only) */
+  mapEffects?: Effect[];
+  /** hand-written description; empty = generated from the effects */
+  desc?: string;
+  /** reward pools (like relics); empty = every character */
+  pools?: string[];
+}
+export interface PotionRules {
+  /** belt size at the start of a run */
+  slots: number;
+  /** chance (%) that a fight drops a potion; it goes down by step when one drops and up when none does */
+  dropChance: number;
+  dropStep: number;
+  rarity: Partial<Record<PotionDef['rarity'], number>>;
+  shop: { count: number; price: Partial<Record<PotionDef['rarity'], [number, number]>> };
+}
+
+/* ----- acts ----- */
+export interface ActDef {
+  name: string;
+  /** map settings that differ from rules.map in this act */
+  map?: Partial<Rules['map']>;
+  /** % of missing HP healed when this act starts (not used for act 1) */
+  healPercent?: number;
+  /** screen ID → background asset key, for this act */
+  backgrounds?: Record<string, string>;
+  /** screen ID or battle / elite / boss → music asset key, for this act */
+  bgm?: Record<string, string>;
 }
 
 export interface CharacterDef {
@@ -179,6 +222,10 @@ export interface CharacterDef {
   color?: string;
   /** hidden until unlocked (future use) */
   locked?: boolean;
+  /** potion belt size; missing = rules.potions.slots */
+  potionSlots?: number;
+  /** potions at the start of a run */
+  potions?: string[];
 }
 
 export type NodeType = 'battle' | 'elite' | 'rest' | 'treasure' | 'shop' | 'event' | 'boss';
@@ -210,6 +257,9 @@ export interface Rules {
     relicRarity?: Partial<Record<RelicDef['rarity'], number>>;
   };
   rest: { healPercent: number };
+  potions?: PotionRules;
+  /** the run's acts in order; missing = one act. Encounters and events choose acts with "acts": [1, 2] */
+  acts?: ActDef[];
   formations: Record<string, { x: number; y: number; scale?: number }[]>;
   sizes: Record<EnemySize, number>;
 }
@@ -259,6 +309,8 @@ export interface EventDef {
   art?: string;
   minFloor?: number;
   maxFloor?: number;
+  /** acts (1, 2, 3…) this event appears in; empty = every act */
+  acts?: number[];
   weight?: number;
   /** only for these characters (empty = everyone) */
   chars?: string[];
@@ -328,8 +380,10 @@ export interface PackManifest {
   assets?: string;
   /** JavaScript modules that register new effects, fx, widgets or actions */
   plugins?: string[];
+  /** CSS files loaded after the built-in styles (see docs/css-guide.md) */
+  styles?: string[];
 }
-export type ContentKind = 'cards' | 'statuses' | 'relics' | 'enemies' | 'encounters' | 'characters' | 'events' | 'rules' | 'vfx' | 'theme' | 'text' | 'audio';
+export type ContentKind = 'cards' | 'statuses' | 'relics' | 'enemies' | 'encounters' | 'characters' | 'events' | 'potions' | 'rules' | 'vfx' | 'theme' | 'text' | 'audio';
 
 /* ===== Runtime state ===== */
 
@@ -378,6 +432,7 @@ export type CombatEvent =
   | { t: 'turn'; side: 'player' | 'enemy'; turn: number }
   | { t: 'energy'; amount: number }
   | { t: 'relic'; relic: string }
+  | { t: 'potion'; potion: string; slot: number }
   | { t: 'shuffle' }
   | { t: 'choice'; prompt: string }
   | { t: 'end'; result: 'won' | 'lost' };
@@ -385,6 +440,7 @@ export type CombatEvent =
 export interface ShopState {
   cards: { card: CardInst; price: number; sold?: boolean; sale?: boolean }[];
   relics: { id: string; price: number; sold?: boolean }[];
+  potions?: { id: string; price: number; sold?: boolean }[];
   removal: { price: number; used?: boolean };
 }
 export interface EventState {
@@ -405,7 +461,7 @@ export interface DeckChoice {
   canCancel?: boolean;
   /** gold to pay when confirmed (shop removal) */
   price?: number;
-  from: 'shop' | 'event' | 'relic';
+  from: 'shop' | 'event' | 'relic' | 'potion';
   /** effects still to run after the pick */
   then?: Effect[];
 }
@@ -428,7 +484,22 @@ export interface RunState {
   rng: { map: number; battle: number; reward: number; ai: number; event?: number };
   nextUid: number;
   phase: 'map' | 'battle' | 'reward' | 'rest' | 'treasure' | 'shop' | 'event' | 'won' | 'lost';
-  pending?: { gold: number; cards: CardInst[]; relic?: string; cardTaken?: boolean; goldTaken?: boolean; relicTaken?: boolean };
+  pending?: {
+    gold: number; cards: CardInst[]; relic?: string; cardTaken?: boolean; goldTaken?: boolean; relicTaken?: boolean;
+    potion?: string; potionTaken?: boolean;
+    /** boss reward: pick one of these relics */
+    relicChoices?: string[];
+    /** leaving this reward starts the next act */
+    nextAct?: boolean;
+  };
+  /** potion belt (null = empty slot) */
+  potions?: (string | null)[];
+  /** current potion drop chance (%) */
+  potionChance?: number;
+  /** current act, 0-based (missing in old saves = 0) */
+  act?: number;
+  /** floors cleared in earlier acts (for the floor shown on screen) */
+  floorBase?: number;
   encounter?: string;
   /** what the current "?" node turned into */
   resolved?: UnknownOutcome;

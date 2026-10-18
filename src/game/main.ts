@@ -3,8 +3,8 @@ import './style.css';
 import './run-screens.ts'; // shop / event / deck-pick widgets and actions
 import { loadContent, type Content } from '../engine/content.ts';
 import { loadPlugins } from '../engine/plugins.ts';
-import { newRun } from '../engine/run.ts';
-import { makeShop, startEvent } from '../engine/run-effects.ts';
+import { newRun, startAct } from '../engine/run.ts';
+import { makeShop, startEvent, givePotion } from '../engine/run-effects.ts';
 import { Rng } from '../engine/rng.ts';
 import { parseLayoutText } from './layout.ts';
 import { App, LAYOUT_OVERRIDE_KEY } from './app.ts';
@@ -24,8 +24,8 @@ import type { ScreenId } from './registry-names.ts';
 
 export interface PlayStart {
   screen?: ScreenId;
-  run?: { char: string; seed?: number };
-  battle?: { encounter: string; enemies?: string[]; char: string; deck?: string[]; relics?: string[]; hp?: number };
+  run?: { char: string; seed?: number; act?: number; potions?: string[] };
+  battle?: { encounter: string; enemies?: string[]; char: string; deck?: string[]; relics?: string[]; hp?: number; potions?: string[] };
   /** open a shop / an event directly (editor play test) */
   shop?: { char: string; gold?: number; floor?: number };
   event?: { id: string; char: string; gold?: number; floor?: number };
@@ -85,6 +85,14 @@ async function boot() {
     const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = content.theme.fonts.googleFonts; document.head.appendChild(l);
   }
   installSkins(content);
+  // pack stylesheets go after the built-in CSS (rules: docs/css-guide.md)
+  document.querySelectorAll('style[data-pack-css]').forEach(e => e.remove());
+  for (const st of content.styles) {
+    const el = document.createElement('style');
+    el.dataset.packCss = st.path;
+    el.textContent = st.text;
+    document.head.appendChild(el);
+  }
   document.title = content.text.ui['game.title'] ?? document.title;
 
   let layoutText = content.layout;
@@ -123,6 +131,9 @@ function start(app: App, s?: PlayStart) {
     if (s.battle.deck?.length) run.deck = s.battle.deck.map(x => ({ id: x.replace(/\+$/, ''), up: x.endsWith('+') })).filter(x => c.cards.has(x.id)).map((x, i) => ({ uid: 1000 + i, ...x }));
     if (s.battle.relics) run.relics = s.battle.relics.filter(r => c.relics.has(r));
     if (s.battle.hp) run.hp = Math.min(run.maxHp, s.battle.hp);
+    if (s.battle.potions) s.battle.potions.forEach(id => { if (c.potions.has(id)) givePotion(run, id); });
+    const enc = c.encounters.get(s.battle.encounter);
+    if (enc?.acts?.length && enc.acts[0] > 1) startAct(c, run, enc.acts[0] - 1);
     run.encounter = s.battle.encounter;
     run.phase = 'battle';
     run.at = { floor: c.encounters.get(s.battle.encounter)!.pool === 'boss' ? run.map.floors.length : 1, col: 0 };
@@ -150,7 +161,12 @@ function start(app: App, s?: PlayStart) {
     startEvent(c, run, c.events.get(s.event.id)!);
     app.run = run; app.go('EVENT'); return;
   }
-  if (s?.run && c.characters.has(s.run.char)) { app.run = newRun(c, s.run.char, s.run.seed); app.go('MAP'); return; }
+  if (s?.run && c.characters.has(s.run.char)) {
+    const run = newRun(c, s.run.char, s.run.seed);
+    if (s.run.act && s.run.act > 1) { startAct(c, run, s.run.act - 1); app.ui.actBanner = true; }
+    s.run.potions?.forEach(id => { if (c.potions.has(id)) givePotion(run, id); });
+    app.run = run; app.go('MAP'); return;
+  }
   app.go(s?.screen && app.layout.screens.has(s.screen) ? s.screen : 'TITLE');
 }
 

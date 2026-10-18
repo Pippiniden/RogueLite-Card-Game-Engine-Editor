@@ -29,7 +29,7 @@ export const EVENTS: Opt[] = [
   ['battleStart', '戦闘開始時'], ['battleEnd', '戦闘勝利時'], ['turnStart', 'ターン開始時'], ['turnEnd', 'ターン終了時'],
   ['cardPlayed', 'カードを使った時'], ['cardDrawn', 'カードを引いた時'], ['cardExhausted', 'カードが廃棄された時'], ['cardDiscarded', '手札からカードを捨てた時'], ['shuffle', '山札をシャッフルした時'],
   ['attacked', '攻撃された時（ブロックされても）'], ['attackDealt', '攻撃した時'], ['damaged', 'HPを失った時'], ['blockGained', 'ブロックを得た時'],
-  ['debuffApplied', '相手に弱体を与えた時'], ['statusGained', '状態が増えた時'], ['death', '倒れた時'],
+  ['debuffApplied', '相手に弱体を与えた時'], ['statusGained', '状態が増えた時'], ['death', '倒れた時'], ['potionUsed', 'ポーションを使った時'],
 ];
 export const BY: Opt[] = [['self', '自分に起きた時'], ['opponent', '相手に起きた時'], ['ally', '味方に起きた時'], ['any', '誰に起きても']];
 export const INTENTS: Opt[] = [
@@ -46,7 +46,7 @@ export const FACE_LABELS: Record<string, string> = { normal: '通常', hurt: '�
 export const SE_MOMENTS: Opt[] = [
   ['click', 'ボタン'], ['cardPlay', 'カードを使う'], ['draw', 'カードを引く'], ['shuffle', 'シャッフル'], ['hit', '敵に命中'], ['playerHit', '主人公が被弾'],
   ['block', 'ブロックを得る'], ['blocked', 'ブロックで防いだ'], ['buff', '強化'], ['debuff', '弱体'], ['heal', '回復'], ['death', '敵が倒れる'],
-  ['victory', '勝利'], ['defeat', '敗北'], ['coin', 'ゴールド'], ['relic', 'レリック'], ['upgrade', '強化（焚き火）'], ['turn', 'ターンの切り替え'], ['enemyAttack', '敵の攻撃'],
+  ['victory', '勝利'], ['defeat', '敗北'], ['coin', 'ゴールド'], ['relic', 'レリック'], ['upgrade', '強化（焚き火）'], ['turn', 'ターンの切り替え'], ['enemyAttack', '敵の攻撃'], ['potion', 'ポーションを使う'],
 ];
 export const BGM_SLOTS: Opt[] = [...SCREENS.filter(([k]) => k !== 'BATTLE'), ['battle', '通常戦闘'], ['elite', 'エリート戦'], ['boss', 'ボス戦']];
 

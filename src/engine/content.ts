@@ -1,5 +1,5 @@
 import type {
-  CardDef, StatusDef, RelicDef, EnemyDef, EncounterDef, CharacterDef, EventDef, Rules, VfxPresets, Theme, TextTable, AudioDef,
+  CardDef, StatusDef, RelicDef, EnemyDef, EncounterDef, CharacterDef, EventDef, PotionDef, Rules, VfxPresets, Theme, TextTable, AudioDef,
   PackManifest, ContentKind, CardInst,
 } from './types.ts';
 
@@ -16,6 +16,9 @@ export interface Content {
   encounters: Map<string, EncounterDef>;
   characters: Map<string, CharacterDef>;
   events: Map<string, EventDef>;
+  potions: Map<string, PotionDef>;
+  /** pack stylesheets (CSS text), in load order */
+  styles: { pack: string; path: string; text: string }[];
   rules: Rules;
   vfx: VfxPresets;
   theme: Theme;
@@ -29,7 +32,7 @@ export interface Content {
   assets: Map<string, string>;
 }
 
-const LIST_KINDS = ['cards', 'statuses', 'relics', 'enemies', 'encounters', 'characters', 'events'] as const;
+const LIST_KINDS = ['cards', 'statuses', 'relics', 'enemies', 'encounters', 'characters', 'events', 'potions'] as const;
 const OBJ_KINDS = ['rules', 'vfx', 'theme', 'text', 'audio'] as const;
 
 export type ReadText = (path: string) => Promise<string>;
@@ -47,7 +50,7 @@ export async function loadContent(root: string, read: ReadText, only?: string[])
   const idx = only?.length ? { packs: only } : JSON.parse(await read(`${root}/index.json`)) as { packs: string[] };
   const c: Content = {
     packs: [], cards: new Map(), statuses: new Map(), relics: new Map(), enemies: new Map(),
-    encounters: new Map(), characters: new Map(), events: new Map(),
+    encounters: new Map(), characters: new Map(), events: new Map(), potions: new Map(), styles: [],
     rules: {} as Rules, vfx: {}, theme: {} as Theme,
     text: { ui: {}, keywords: {}, effects: {}, intents: {}, nodes: {}, cardTypes: {}, rarities: {} },
     audio: { se: {}, bgm: {} }, plugins: [], layout: '', assets: new Map(),
@@ -72,6 +75,7 @@ export async function loadContent(root: string, read: ReadText, only?: string[])
       }
     }
     for (const p of man.plugins ?? []) c.plugins.push(`${dir}/${p}`);
+    for (const p of man.styles ?? []) c.styles.push({ pack: packId, path: `${dir}/${p}`, text: await read(`${dir}/${p}`) });
     if (man.layout) c.layout = await read(`${dir}/${man.layout}`);
     if (man.assets) {
       const m = JSON.parse(await read(`${dir}/${man.assets}`)) as Record<string, string>;

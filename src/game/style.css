@@ -177,6 +177,25 @@ img { display: block; max-width: 100%; }
 @keyframes flicker { 50% { scale: 1.03 .97; filter: brightness(1.1); } }
 [data-bind="result.stats"] { text-align: center; color: var(--c-ink); }
 
+/* ===== potions ===== */
+.potion-belt { justify-content: flex-end; padding-right: 10px; }
+.potion-slot { width: 30px; height: 30px; flex: none; display: grid; place-items: center; padding: 0; border-radius: 50%; border: 1px solid #4a4030; background: #17181d; cursor: pointer; }
+.potion-slot img { width: 26px; height: 26px; }
+.potion-slot.empty { border-style: dashed; border-color: #3a3c46; background: none; cursor: default; }
+.potion-slot.aiming { border-color: var(--c-ember); box-shadow: 0 0 0 2px var(--c-ember), 0 0 12px var(--c-ember); animation: aim 1s ease-in-out infinite; }
+@keyframes aim { 50% { box-shadow: 0 0 0 2px var(--c-ember), 0 0 2px var(--c-ember); } }
+.potion-info { align-items: flex-start; }
+.potion-info img { width: 64px; height: 64px; flex: none; }
+.potion-info h3 { margin: 0; }
+.potion-info small { color: var(--c-muted); font-size: 12px; }
+.potion-info p { margin: 6px 0 0; color: var(--c-ink); font-size: 14px; line-height: 1.5; }
+[data-bind="potion.use"] { font-size: 16px; }
+[data-bind="reward.title"].long { font-size: 21px; letter-spacing: .08em; }
+.boss-relic { min-height: 96px; }
+.boss-relic img { width: 48px; height: 48px; }
+[data-bind="reward.relicTitle"] { font-family: var(--f-display); font-size: 18px; font-weight: 600; color: var(--c-parchment); }
+.reward-sub { margin: 6px 2px 0; font-size: 12px; letter-spacing: .12em; color: var(--c-muted); }
+
 /* ===== shop ===== */
 .merchant img { width: 100%; height: 100%; object-fit: contain; }
 [data-bind="shop.title"], [data-bind="event.name"] { font-family: var(--f-display); font-size: 22px; font-weight: 700; color: var(--c-parchment); letter-spacing: .08em; }

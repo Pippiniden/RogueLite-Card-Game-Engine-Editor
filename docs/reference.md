@@ -190,6 +190,15 @@
 
 ### 冒険全体
 
+#### `gainPotion` — ポーションを得る
+
+既定の受け手: なし
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `potion` | potion |  | ポーション（空ならランダム） |
+| `count` | num | `1` | 数 |
+
 #### `gainGold` — ゴールドを得る
 
 既定の受け手: なし
@@ -377,7 +386,7 @@
 | `select` | enum | `"choose"` | 選び方 `choose`=プレイヤーが選ぶ / `random`=ランダム |
 | `filter` | enum | `""` | 種類 `""`=どれでも / `attack`=アタック / `skill`=スキル / `power`=パワー / `status`=状態異常 / `curse`=呪い |
 
-### レリック
+### レリック・ポーション
 
 #### `gainRelic` — レリックを得る
 
@@ -385,6 +394,20 @@
 | --- | --- | --- | --- |
 | `relic` | relic |  | レリック（空ならランダム） |
 | `rarity` | enum | `""` | ランダムの時のレアリティ `""`=ふつうの出やすさで / `common`=コモン / `uncommon`=アンコモン / `rare`=レア / `boss`=ボス / `shop`=ショップ |
+
+#### `gainPotion` — ポーションを得る
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `potion` | potion |  | ポーション（空ならランダム） |
+| `rarity` | enum | `""` | ランダムの時のレアリティ `""`=ふつうの出やすさで / `common`=コモン / `uncommon`=アンコモン / `rare`=レア |
+| `count` | num | `1` | 数 |
+
+#### `addPotionSlots` — ポーションの枠を増やす
+
+| 項目 | 型 | 既定 | 説明 |
+| --- | --- | --- | --- |
+| `count` | num | `1` | 数 |
 
 #### `loseRelic` — レリックを失う
 
@@ -456,6 +479,7 @@
 | `debuffApplied` | 相手に弱体を与えた時 |
 | `statusGained` | 状態が増えた時 |
 | `death` | 倒れた時 |
+| `potionUsed` | ポーションを使った時 |
 
 ### 誰に起きた時（by）
 
@@ -695,6 +719,11 @@ card.<変数名>（カードの変数）/ card.upgraded / card.cost
 | `result.portrait` | 結果画面の顔 |
 | `result.title` | 勝敗 |
 | `result.stats` | 記録 |
+| `run.potions` | ポーションの枠（タップで使う・捨てる） |
+| `reward.relicTitle` | ボスのレリックを選ぶシートの見出し |
+| `reward.relicChoices` | ボスのレリックの候補（タップで1つ取る） |
+| `potion.info` | ポーションの説明（ポーションのメニュー） |
+| `potion.use` | ポーションを使うボタン |
 | `shop.merchant` | 店主の絵 |
 | `shop.title` | ショップの見出し |
 | `shop.say` | 店主のひとこと（買うと変わる） |
@@ -737,6 +766,10 @@ card.<変数名>（カードの変数）/ card.upgraded / card.cost
 | `shopRemoval` | カード削除を始める |
 | `confirmDeckChoice` | デッキから選んだカードで決定 |
 | `cancelDeckChoice` | デッキからの選択をやめる（選ばない） |
+| `usePotion` | メニューで選んだポーションを使う |
+| `discardPotion` | メニューで選んだポーションを捨てる |
+| `closePotion` | ポーションのメニューを閉じる |
+| `closeRelicChoice` | ボスのレリックのシートを閉じる（あとで選ぶ） |
 
 ### UIスキンの部品（skin）
 
@@ -799,6 +832,7 @@ card.<変数名>（カードの変数）/ card.upgraded / card.cost
 | `upgrade` | 強化（焚き火） |
 | `turn` | ターンの切り替え |
 | `enemyAttack` | 敵の攻撃 |
+| `potion` | ポーションを使う |
 
 ### 音楽の場面（audio.json → bgm）
 

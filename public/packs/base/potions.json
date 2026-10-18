@@ -1,0 +1,14 @@
+[
+  {"id":"fire_potion","name":"火炎瓶","icon":"potion.fire","rarity":"common","target":"enemy","effects":[{"op":"damage","amount":20,"kind":"raw"}]},
+  {"id":"explosive_potion","name":"爆裂瓶","icon":"potion.explosive","rarity":"common","target":"all_enemies","effects":[{"op":"damage","amount":10,"kind":"raw","to":"allEnemies"}]},
+  {"id":"block_potion","name":"硬化薬","icon":"potion.block","rarity":"common","target":"self","effects":[{"op":"block","amount":12,"raw":true}]},
+  {"id":"dexterity_potion","name":"俊敏の薬","icon":"potion.dexterity","rarity":"common","target":"self","effects":[{"op":"applyStatus","status":"dexterity","stacks":2}]},
+  {"id":"weak_potion","name":"弱化の粉","icon":"potion.weak","rarity":"common","target":"enemy","effects":[{"op":"applyStatus","status":"weak","stacks":3}]},
+  {"id":"fear_potion","name":"恐怖の粉","icon":"potion.fear","rarity":"common","target":"enemy","effects":[{"op":"applyStatus","status":"vulnerable","stacks":3}]},
+  {"id":"energy_potion","name":"活力の薬","icon":"potion.energy","rarity":"common","target":"self","effects":[{"op":"gainEnergy","amount":2}]},
+  {"id":"swift_potion","name":"速読の薬","icon":"potion.swift","rarity":"common","target":"self","effects":[{"op":"draw","count":3}]},
+  {"id":"strength_potion","name":"怪力の薬","icon":"potion.strength","rarity":"uncommon","target":"self","effects":[{"op":"applyStatus","status":"strength","stacks":2}]},
+  {"id":"poison_potion","name":"毒の瓶","icon":"potion.poison","rarity":"uncommon","target":"enemy","effects":[{"op":"applyStatus","status":"poison","stacks":6}]},
+  {"id":"healing_potion","name":"癒やしの薬","icon":"potion.heal","rarity":"uncommon","target":"self","effects":[{"op":"heal","amount":"floor(self.maxHp * 0.2)"}],"mapEffects":[{"op":"heal","amount":"floor(maxHp * 0.2)"}],"desc":"最大HPの20%回復する。戦闘の外でも使える。"},
+  {"id":"fruit_juice","name":"果実の汁","icon":"potion.fruit","rarity":"rare","target":"self","effects":[{"op":"gainMaxHp","amount":5}],"mapEffects":[{"op":"gainMaxHp","amount":5}],"desc":"最大HPが5増える。戦闘の外でも使える。"}
+]

@@ -18,7 +18,8 @@
     "coin": "se.coin",
     "relic": "se.relic",
     "upgrade": "se.upgrade",
-    "turn": "se.turn"
+    "turn": "se.turn",
+    "potion": "se.potion"
   },
   "bgm": {
     "TITLE": "bgm.title",

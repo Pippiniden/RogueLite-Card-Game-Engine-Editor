@@ -104,7 +104,28 @@
     "log.remove": "{name}を取り除いた",
     "log.upgrade": "{name}を強化した",
     "log.transform": "{from}が{to}に変わった",
-    "log.relic": "{name}を手に入れた"
+    "log.relic": "{name}を手に入れた",
+    "hud.floorAct": "{act}-{floor}階",
+    "act.start": "{name}",
+    "act.cleared": "{name} 突破",
+    "potion.empty": "空き",
+    "potion.use": "使う",
+    "potion.throw": "投げる（敵を選ぶ）",
+    "potion.discard": "捨てる",
+    "potion.close": "閉じる",
+    "potion.notNow": "今は使えない",
+    "potion.combatOnly": "戦闘中だけ使える",
+    "potion.chooseTarget": "使う相手を選ぶ",
+    "potion.full": "ポーションがいっぱい（どれかを捨てる）",
+    "potion.got": "{name}を手に入れた",
+    "reward.potion": "{name}",
+    "reward.bossRelic": "ボスのレリックを1つ選ぶ",
+    "reward.nextAct": "次の幕へ",
+    "shop.potionsTitle": "ポーション",
+    "log.potion": "{name}を手に入れた",
+    "log.potionFull": "ポーションがいっぱいで{name}を受け取れなかった",
+    "result.statsAct": "第{act}幕 {floor}階まで到達 · 撃破 {kills} · エリート {elites}",
+    "potion.alsoOutside": "戦闘の外でも使える"
   },
   "keywords": {
     "exhaust": {
@@ -199,7 +220,11 @@
     "run.chance.else": "{percent}%の確率で{then}（外れると{else}）",
     "run.if": "条件を満たせば{then}",
     "run.join": "、",
-    "run.chance.miss": "{miss}%の確率で{else}"
+    "run.chance.miss": "{miss}%の確率で{else}",
+    "gainPotion": "ポーションを{count}つ得る",
+    "run.gainPotion": "{potion}を得る",
+    "run.gainPotion.random": "ランダムな{rarity}ポーションを{count}つ得る",
+    "run.addPotionSlots": "ポーションの枠が{count}つ増える"
   },
   "intents": {
     "attack": "攻撃",

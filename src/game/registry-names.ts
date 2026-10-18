@@ -7,6 +7,11 @@ export type ScreenId = typeof SCREEN_IDS[number];
 
 /** shop, event and the out-of-combat card picker (src/game/run-screens.ts) */
 export const RUN_WIDGET_INFO = {
+  'run.potions': 'ポーションの枠（タップで使う・捨てる）',
+  'reward.relicTitle': 'ボスのレリックを選ぶシートの見出し',
+  'reward.relicChoices': 'ボスのレリックの候補（タップで1つ取る）',
+  'potion.info': 'ポーションの説明（ポーションのメニュー）',
+  'potion.use': 'ポーションを使うボタン',
   'shop.merchant': '店主の絵',
   'shop.title': 'ショップの見出し',
   'shop.say': '店主のひとこと（買うと変わる）',
@@ -106,8 +111,12 @@ export const ACTION_INFO = {
   shopRemoval: 'カード削除を始める',
   confirmDeckChoice: 'デッキから選んだカードで決定',
   cancelDeckChoice: 'デッキからの選択をやめる（選ばない）',
+  usePotion: 'メニューで選んだポーションを使う',
+  discardPotion: 'メニューで選んだポーションを捨てる',
+  closePotion: 'ポーションのメニューを閉じる',
+  closeRelicChoice: 'ボスのレリックのシートを閉じる（あとで選ぶ）',
 } as const;
-export const RUN_ACTIONS = ['shopTab', 'shopBuy', 'shopCancel', 'shopRemoval', 'confirmDeckChoice', 'cancelDeckChoice'] as const;
+export const RUN_ACTIONS = ['shopTab', 'shopBuy', 'shopCancel', 'shopRemoval', 'confirmDeckChoice', 'cancelDeckChoice', 'usePotion', 'discardPotion', 'closePotion', 'closeRelicChoice'] as const;
 export type RunActionName = typeof RUN_ACTIONS[number];
 export type ActionName = keyof typeof ACTION_INFO;
 export const ACTION_NAMES = Object.keys(ACTION_INFO) as ActionName[];

@@ -47,7 +47,7 @@ const BUILTIN: Record<Exclude<ActionName, 'open' | 'close' | RunActionName>, Act
   showPile(app, args) { app.ui.pile = (args[0] as 'draw' | 'discard' | 'exhaust') || 'draw'; },
   endTurn(app) { endTurn(app); },
   confirmChoice(app) { confirmChoice(app); },
-  leaveNode(app) { if (app.run) { leaveNode(app.run); app.save(); } },
+  leaveNode(app) { if (app.run) { const nextAct = !!app.run.pending?.nextAct; leaveNode(app.run, app.content); app.save(); if (nextAct) app.ui.actBanner = true; } },
   restHeal(app) {
     if (!app.run || app.ui.restDone) return;
     const n = restHeal(app.content, app.run);
